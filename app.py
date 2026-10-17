@@ -389,6 +389,12 @@ if not st.session_state.quiz_submitted:
                 )
             confirm = st.checkbox("Saya sudah memeriksa jawaban saya.")
             send = st.form_submit_button("Kirim jawaban dan lihat nilai", type="primary", use_container_width=True)
+        # Navigasi kembali juga tersedia saat peserta masih mengerjakan formulir.
+        if normalize(section) == "skull" and quiz_stage > 1:
+            if st.button(f"← Kembali ke Gambar {quiz_stage - 1}", key=f"back_from_form_{quiz_stage}", use_container_width=True):
+                st.session_state.quiz_stage = quiz_stage - 1
+                st.session_state.quiz_submitted = False
+                st.rerun()
 
     if send:
         if not confirm:
