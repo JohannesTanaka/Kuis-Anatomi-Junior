@@ -50,8 +50,9 @@ st.markdown("""
     position: fixed !important;
     top: 1rem !important;
     left: max(2rem, calc((100vw - 90rem) / 2)) !important;
-    width: 42rem !important;
-    max-width: calc(100vw - 4rem) !important;
+    width: 570px !important;
+    max-width: calc(100vw - 2rem) !important;
+    box-sizing: border-box !important;
     max-height: calc(100vh - 2rem) !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
@@ -60,7 +61,7 @@ st.markdown("""
     z-index: 10 !important;
 }
 .st-key-image_panel::-webkit-scrollbar {
-    width: 5px !important;
+    width: 4px !important;
 }
 .st-key-image_panel::-webkit-scrollbar-track {
     background: transparent !important;
@@ -203,26 +204,6 @@ def save_result(result):
         writer.writerows(existing_rows)
 
 
-def load_top_three(section_name):
-    """Ambil tiga hasil terbaik yang tersimpan lokal untuk bagian yang sama."""
-    if not RESULTS_PATH.exists():
-        return []
-    try:
-        with open(RESULTS_PATH, "r", newline="", encoding="utf-8-sig") as f:
-            rows = list(csv.DictReader(f))
-        rows = [r for r in rows if normalize(r.get("bagian", "")) == normalize(section_name)]
-        rows.sort(
-            key=lambda r: (
-                float(r.get("nilai_persen") or 0),
-                int(float(r.get("jawaban_benar") or 0)),
-            ),
-            reverse=True,
-        )
-        return rows[:3]
-    except Exception:
-        return []
-
-
 def reset_quiz():
     for key in list(st.session_state.keys()):
         if key.startswith("answer_") or key in {
@@ -303,7 +284,7 @@ if not st.session_state.quiz_submitted:
                     path = BASE / filename
                     if path.exists():
                         # Kedua gambar memakai lebar render eksplisit yang sama.
-                        # Lebar 650 px menjaga ukuran kiri-ke-kanan konsisten dan proporsi asli tetap terjaga.
+                        # Lebar 550 px menjaga ukuran kiri-ke-kanan konsisten dan proporsi asli tetap terjaga.
                         st.image(Image.open(path), width=550)
                         shown += 1
                 if shown == 0:
@@ -397,23 +378,6 @@ for idx, item in enumerate(details, start=1):
         st.markdown(f"<span style='color:#d92d20;font-weight:700'>{idx}. Salah</span>", unsafe_allow_html=True)
     st.write(f"Jawaban Peserta: {item['jawaban_peserta'].strip() or 'Tidak dijawab'}")
     st.write(f"Jawaban yang Benar: {item['jawaban_benar']}")
-
-st.divider()
-st.subheader(f"3 Nilai Tertinggi — {section}")
-top_three = load_top_three(section)
-if top_three:
-    for rank, row in enumerate(top_three, start=1):
-        try:
-            top_score = float(row.get("nilai_persen") or 0)
-        except (TypeError, ValueError):
-            top_score = 0.0
-        st.write(
-            f"{rank}. {row.get('nama_peserta', 'Peserta')} — "
-            f"{top_score:.2f}% ({row.get('jawaban_benar', '0')}/"
-            f"{row.get('jumlah_soal_dinilai', '0')} benar)"
-        )
-else:
-    st.caption("Belum ada hasil tersimpan untuk bagian ini.")
 
 if st.button("Kembali ke menu bagian", type="primary"):
     reset_quiz()
