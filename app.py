@@ -247,9 +247,14 @@ if not st.session_state.quiz_submitted:
                         shown += 1
                 if shown == 0:
                     st.info("Gambar Skull belum tersedia. Unggah gambar_tengkorak.png dan gambar_tengkorak_2.png ke repositori GitHub.")
-                st.caption(
-                    "Referensi: Weir & Abrahams’ Imaging Atlas of Human Anatomy, Fifth Edition.\n"
-                    "Jawaban harus sama persis dengan istilah yang digunakan dalam buku referensi."
+                st.markdown(
+                    """
+                    <div style="font-size:0.875rem; line-height:1.25;">
+                        Referensi: Weir &amp; Abrahams’ Imaging Atlas of Human Anatomy, Fifth Edition.<br>
+                        Jawaban harus sama persis dengan istilah yang digunakan dalam buku referensi.
+                    </div>
+                    """,
+                    unsafe_allow_html=True
                 )
             elif image_path.exists():
                 st.image(Image.open(image_path), caption=f"Gambar referensi • {section}", use_container_width=True)
@@ -259,7 +264,6 @@ if not st.session_state.quiz_submitted:
                     f"`{IMAGE_FILES.get(section, 'gambar_bagian.png')}` ke repositori GitHub."
                 )
     with right:
-        st.caption(f"Nama: {st.session_state.participant_name}  •  NIM: {st.session_state.participant_nim}")
         with st.form("quiz_answers"):
             for idx, item in enumerate(section_questions, start=1):
                 prompt = item["pertanyaan"] or f"Identifikasi struktur anatomi {idx}."
@@ -291,6 +295,8 @@ if not st.session_state.quiz_submitted:
             score = round(earned_points / total_points * 100, 2) if total_points else 0
             result = {
                 "waktu": datetime.now().isoformat(timespec="seconds"),
+                "nama_peserta": st.session_state.participant_name,
+                "nim": st.session_state.participant_nim,
                 "bagian": section,
                 "jumlah_soal_dinilai": len(details),
                 "jawaban_benar": correct_count,
