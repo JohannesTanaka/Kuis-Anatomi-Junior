@@ -75,7 +75,7 @@ st.markdown("""
         max-height: none !important;
     }
     .st-key-image_panel [data-testid="stImage"] img {
-        width: min(550px, 100%) !important;
+        width: min(650px, 100%) !important;
         max-width: 100% !important;
     }
 }
