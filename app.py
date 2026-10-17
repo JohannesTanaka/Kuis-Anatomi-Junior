@@ -389,12 +389,40 @@ if not st.session_state.quiz_submitted:
                 )
             confirm = st.checkbox("Saya sudah memeriksa jawaban saya.")
             send = st.form_submit_button("Kirim jawaban dan lihat nilai", type="primary", use_container_width=True)
-        # Navigasi kembali juga tersedia saat peserta masih mengerjakan formulir.
-        if normalize(section) == "skull" and quiz_stage > 1:
-            if st.button(f"← Kembali ke Gambar {quiz_stage - 1}", key=f"back_from_form_{quiz_stage}", use_container_width=True):
-                st.session_state.quiz_stage = quiz_stage - 1
-                st.session_state.quiz_submitted = False
-                st.rerun()
+        # Navigasi antargambar tersedia meskipun peserta belum mengirim jawaban.
+        if normalize(section) == "skull":
+            nav_back, nav_next = st.columns(2)
+            with nav_back:
+                if quiz_stage > 1:
+                    if st.button(
+                        f"← Kembali ke Gambar {quiz_stage - 1}",
+                        key=f"back_from_form_{quiz_stage}",
+                        use_container_width=True,
+                    ):
+                        st.session_state.quiz_stage = quiz_stage - 1
+                        st.session_state.quiz_submitted = False
+                        st.rerun()
+            with nav_next:
+                if quiz_stage < 7:
+                    next_stage_form = quiz_stage + 1
+                    if st.button(
+                        f"Lanjut ke Gambar {next_stage_form} →",
+                        key=f"next_from_form_{quiz_stage}",
+                        type="secondary",
+                        use_container_width=True,
+                    ):
+                        if not any(
+                            str(q.get("gambar", "1")).strip() == str(next_stage_form)
+                            for q in all_section_questions
+                        ):
+                            st.warning(
+                                f"Soal gambar {next_stage_form} belum tersedia. "
+                                f"Tambahkan soal di Google Sheets dengan bagian=Skull dan gambar={next_stage_form}."
+                            )
+                        else:
+                            st.session_state.quiz_stage = next_stage_form
+                            st.session_state.quiz_submitted = False
+                            st.rerun()
 
     if send:
         if not confirm:
