@@ -2,6 +2,7 @@ import csv
 import json
 import re
 import unicodedata
+import uuid
 from datetime import datetime
 from pathlib import Path
 
@@ -256,7 +257,7 @@ def reset_quiz():
         if key.startswith("answer_") or key in {
             "quiz_started", "quiz_submitted", "participant_name",
             "participant_nim", "selected_section", "result", "detail",
-            "quiz_stage", "stage_results", "stage_detail",
+            "quiz_stage", "stage_results", "stage_detail", "attempt_id",
         }:
             del st.session_state[key]
 
@@ -273,6 +274,10 @@ if "stage_results" not in st.session_state:
     st.session_state.stage_results = {}
 if "stage_detail" not in st.session_state:
     st.session_state.stage_detail = {}
+# Token unik untuk setiap percobaan. Perubahan token membuat semua kolom jawaban
+# menjadi widget baru, sehingga nilai dari percobaan sebelumnya tidak terbawa.
+if "attempt_id" not in st.session_state:
+    st.session_state.attempt_id = uuid.uuid4().hex
 
 questions, load_error = load_questions()
 if load_error:
@@ -368,7 +373,12 @@ if not st.session_state.quiz_submitted:
         with st.form("quiz_answers"):
             for idx, item in enumerate(section_questions, start=1):
                 prompt = item["pertanyaan"] or f"Identifikasi struktur anatomi {idx}."
-                st.text_input(prompt, key=f"answer_{item['id']}", placeholder="Ketik jawaban...")
+                answer_key = f"answer_{st.session_state.attempt_id}_{item['id']}"
+                st.text_input(
+                    prompt,
+                    key=answer_key,
+                    placeholder="Ketik jawaban...",
+                )
             confirm = st.checkbox("Saya sudah memeriksa jawaban saya.")
             send = st.form_submit_button("Kirim jawaban dan lihat nilai", type="primary", use_container_width=True)
 
@@ -379,7 +389,8 @@ if not st.session_state.quiz_submitted:
             details = []
             total_points = earned_points = correct_count = 0
             for item in section_questions:
-                response = st.session_state.get(f"answer_{item['id']}", "").strip()
+                answer_key = f"answer_{st.session_state.attempt_id}_{item['id']}"
+                response = st.session_state.get(answer_key, "").strip()
                 points = item["poin"]
                 correct = answer_matches(response, item)
                 total_points += points
@@ -435,8 +446,8 @@ st.divider()
 retry_col, next_col = st.columns(2)
 with retry_col:
     if st.button("Ulangi Lagi", use_container_width=True):
-        for item in section_questions:
-            st.session_state.pop(f"answer_{item['id']}", None)
+        # Mulai percobaan baru dengan kunci widget yang benar-benar baru.
+        st.session_state.attempt_id = uuid.uuid4().hex
         st.session_state.quiz_submitted = False
         st.rerun()
 with next_col:
@@ -446,8 +457,8 @@ with next_col:
             if not any(str(q.get("gambar", "1")).strip() == str(next_stage) for q in all_section_questions):
                 st.error(f"Soal gambar {next_stage} belum tersedia. Tambahkan soal di Google Sheets dengan bagian=Skull dan gambar={next_stage}.")
             else:
-                for item in section_questions:
-                    st.session_state.pop(f"answer_{item['id']}", None)
+                # Setiap gambar/tahap baru menggunakan sesi input baru.
+                st.session_state.attempt_id = uuid.uuid4().hex
                 st.session_state.quiz_stage = next_stage
                 st.session_state.quiz_submitted = False
                 st.rerun()
