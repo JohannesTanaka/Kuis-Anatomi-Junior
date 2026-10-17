@@ -1,0 +1,7 @@
+.streamlit/secrets.toml
+service_account.json
+*service-account*.json
+*service_account*.json
+hasil_kuis_lokal.csv
+__pycache__/
+.venv/
