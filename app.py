@@ -54,7 +54,20 @@ st.markdown("""
     max-width: calc(100vw - 4rem) !important;
     max-height: calc(100vh - 2rem) !important;
     overflow-y: auto !important;
+    overflow-x: hidden !important;
+    scrollbar-width: thin !important;
+    scrollbar-color: #b0b0b0 transparent !important;
     z-index: 10 !important;
+}
+.st-key-image_panel::-webkit-scrollbar {
+    width: 5px !important;
+}
+.st-key-image_panel::-webkit-scrollbar-track {
+    background: transparent !important;
+}
+.st-key-image_panel::-webkit-scrollbar-thumb {
+    background: #b0b0b0 !important;
+    border-radius: 10px !important;
 }
 .st-key-image_panel [data-testid="stImage"] {
     width: auto !important;
@@ -62,12 +75,12 @@ st.markdown("""
 }
 .st-key-image_panel [data-testid="stImage"] img {
     display: block !important;
-    width: 550px !important;
+    width: 650px !important;
     max-width: none !important;
     height: auto !important;
     object-fit: contain !important;
 }
-@media (max-width: 600px) {
+@media (max-width: 900px) {
     .st-key-image_panel {
         position: static !important;
         width: 100% !important;
@@ -75,7 +88,7 @@ st.markdown("""
         max-height: none !important;
     }
     .st-key-image_panel [data-testid="stImage"] img {
-        width: min(550px, 100%) !important;
+        width: min(650px, 100%) !important;
         max-width: 100% !important;
     }
 }
@@ -170,19 +183,51 @@ def answer_matches(response, item):
 
 
 def save_result(result):
-    exists = RESULTS_PATH.exists()
-    with open(RESULTS_PATH, "a", newline="", encoding="utf-8-sig") as f:
-        writer = csv.DictWriter(f, fieldnames=list(result.keys()))
-        if not exists:
-            writer.writeheader()
-        writer.writerow(result)
+    """Simpan hasil ke CSV lokal; gabungkan kolom lama dan baru agar tidak gagal."""
+    existing_rows = []
+    fieldnames = list(result.keys())
+    if RESULTS_PATH.exists():
+        try:
+            with open(RESULTS_PATH, "r", newline="", encoding="utf-8-sig") as f:
+                reader = csv.DictReader(f)
+                existing_rows = list(reader)
+                for field in (reader.fieldnames or []):
+                    if field not in fieldnames:
+                        fieldnames.append(field)
+        except Exception:
+            existing_rows = []
+    existing_rows.append({key: str(value) for key, value in result.items()})
+    with open(RESULTS_PATH, "w", newline="", encoding="utf-8-sig") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(existing_rows)
+
+
+def load_top_three(section_name):
+    """Ambil tiga hasil terbaik yang tersimpan lokal untuk bagian yang sama."""
+    if not RESULTS_PATH.exists():
+        return []
+    try:
+        with open(RESULTS_PATH, "r", newline="", encoding="utf-8-sig") as f:
+            rows = list(csv.DictReader(f))
+        rows = [r for r in rows if normalize(r.get("bagian", "")) == normalize(section_name)]
+        rows.sort(
+            key=lambda r: (
+                float(r.get("nilai_persen") or 0),
+                int(float(r.get("jawaban_benar") or 0)),
+            ),
+            reverse=True,
+        )
+        return rows[:3]
+    except Exception:
+        return []
 
 
 def reset_quiz():
     for key in list(st.session_state.keys()):
         if key.startswith("answer_") or key in {
             "quiz_started", "quiz_submitted", "participant_name",
-            "participant_nim", "selected_section", "result", "detail",
+            "participant_nim", "participant_email", "selected_section", "result", "detail",
         }:
             del st.session_state[key]
 
@@ -222,6 +267,7 @@ if not st.session_state.quiz_started:
     with st.form("participant_form"):
         participant_name = st.text_input("Nama")
         participant_nim = st.text_input("NIM")
+        participant_email = st.text_input("Email")
         begin = st.form_submit_button("Lanjut ke soal", type="primary", use_container_width=True)
     col1, col2 = st.columns([1, 1])
     with col1:
@@ -229,8 +275,10 @@ if not st.session_state.quiz_started:
             st.session_state.selected_section = None
             st.rerun()
     if begin:
-        if not participant_name.strip() or not participant_nim.strip():
-            st.error("Nama dan NIM wajib diisi.")
+        if not participant_name.strip() or not participant_nim.strip() or not participant_email.strip():
+            st.error("Nama, NIM, dan email wajib diisi.")
+        elif not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", participant_email.strip()):
+            st.error("Format email belum valid.")
         elif not section_questions:
             st.error(
                 f"Belum ada soal aktif untuk bagian {section}. Tambahkan kolom 'bagian' di Google Sheets, "
@@ -239,6 +287,7 @@ if not st.session_state.quiz_started:
         else:
             st.session_state.participant_name = participant_name.strip()
             st.session_state.participant_nim = participant_nim.strip()
+            st.session_state.participant_email = participant_email.strip()
             st.session_state.quiz_started = True
             st.rerun()
     st.stop()
@@ -259,7 +308,7 @@ if not st.session_state.quiz_submitted:
                     if path.exists():
                         # Kedua gambar memakai lebar render eksplisit yang sama.
                         # Lebar 650 px menjaga ukuran kiri-ke-kanan konsisten dan proporsi asli tetap terjaga.
-                        st.image(Image.open(path), width=550)
+                        st.image(Image.open(path), width=650)
                         shown += 1
                 if shown == 0:
                     st.info("Gambar Skull belum tersedia. Unggah gambar_tengkorak.png dan gambar_tengkorak_2.png ke repositori GitHub.")
@@ -313,6 +362,7 @@ if not st.session_state.quiz_submitted:
                 "waktu": datetime.now().isoformat(timespec="seconds"),
                 "nama_peserta": st.session_state.participant_name,
                 "nim": st.session_state.participant_nim,
+                "email": st.session_state.participant_email,
                 "bagian": section,
                 "jumlah_soal_dinilai": len(details),
                 "jawaban_benar": correct_count,
@@ -337,24 +387,39 @@ st.markdown(
     f'<div class="quiz-title">HASIL KUIS — {section.upper()}</div>',
     unsafe_allow_html=True
 )
-
 st.subheader(
     f"Jawaban Benar: {result['jawaban_benar']}/{result['jumlah_soal_dinilai']}"
 )
 st.write(f"Nama: {result['nama_peserta']}")
 st.write(f"NIM: {result['nim']}")
-st.write(f"Nilai: {result['nilai_persen']:.2f}%")
+st.write(f"Email: {result.get('email', st.session_state.get('participant_email', ''))}")
 
 st.divider()
 
 for idx, item in enumerate(details, start=1):
-    status = "Benar" if item["benar"] else "Salah"
-    st.markdown(f"**{idx}. {status}**")
-    st.write(
-        f"Jawaban Peserta: "
-        f"{item['jawaban_peserta'].strip() or 'Tidak dijawab'}"
-    )
+    if item["benar"]:
+        st.markdown(f"<span style='color:#16803c;font-weight:700'>{idx}. Benar</span>", unsafe_allow_html=True)
+    else:
+        st.markdown(f"<span style='color:#d92d20;font-weight:700'>{idx}. Salah</span>", unsafe_allow_html=True)
+    st.write(f"Jawaban Peserta: {item['jawaban_peserta'].strip() or 'Tidak dijawab'}")
     st.write(f"Jawaban yang Benar: {item['jawaban_benar']}")
+
+st.divider()
+st.subheader(f"3 Nilai Tertinggi — {section}")
+top_three = load_top_three(section)
+if top_three:
+    for rank, row in enumerate(top_three, start=1):
+        try:
+            top_score = float(row.get("nilai_persen") or 0)
+        except (TypeError, ValueError):
+            top_score = 0.0
+        st.write(
+            f"{rank}. {row.get('nama_peserta', 'Peserta')} — "
+            f"{top_score:.2f}% ({row.get('jawaban_benar', '0')}/"
+            f"{row.get('jumlah_soal_dinilai', '0')} benar)"
+        )
+else:
+    st.caption("Belum ada hasil tersimpan untuk bagian ini.")
 
 if st.button("Kembali ke menu bagian", type="primary"):
     reset_quiz()
