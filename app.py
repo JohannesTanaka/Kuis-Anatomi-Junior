@@ -139,7 +139,43 @@ def read_google_sheet_rows():
     )
     client = gspread.authorize(credentials)
     spreadsheet = client.open_by_key(spreadsheet_id)
-    return spreadsheet.sheet1.get_all_records()
+    # Read raw cells so duplicate headers do not crash gspread.
+    # If old columns were left on the left and the new table pasted to the right,
+    # use the LAST occurrence of each header (the newer table).
+    values = spreadsheet.sheet1.get_all_values()
+    if not values:
+        return []
+
+    expected_headers = [
+        "id", "pertanyaan", "jawaban_benar", "alternatif_jawaban",
+        "poin", "aktif", "bagian", "gambar",
+    ]
+    actual_headers = [str(value).strip() for value in values[0]]
+    header_positions = {}
+    for index, header in enumerate(actual_headers):
+        if header:
+            header_positions[header] = index  # last duplicate wins
+
+    missing = [h for h in ("id", "pertanyaan", "jawaban_benar") if h not in header_positions]
+    if missing:
+        raise RuntimeError(
+            "Header wajib tidak ditemukan di baris pertama: " + ", ".join(missing)
+        )
+
+    rows = []
+    for raw_row in values[1:]:
+        if not any(str(cell).strip() for cell in raw_row):
+            continue
+        row = {}
+        for header in expected_headers:
+            index = header_positions.get(header)
+            row[header] = (
+                str(raw_row[index]).strip()
+                if index is not None and index < len(raw_row)
+                else ""
+            )
+        rows.append(row)
+    return rows
 
 
 def truthy(value):
