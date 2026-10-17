@@ -453,7 +453,6 @@ if not st.session_state.quiz_started:
         elif not section_questions:
             st.error(
                 f"Belum ada soal aktif untuk bagian {section}. "
-                "Pastikan kolom 'bagian' dan 'aktif' sudah benar."
             )
         else:
             st.session_state.participant_name = participant_name.strip()
@@ -554,7 +553,7 @@ if not st.session_state.quiz_submitted:
 
     if send:
         if not confirm:
-            st.error("Centang konfirmasi sebelum mengirim jawaban.")
+            st.caption("⚠️ Centang konfirmasi terlebih dahulu sebelum mengirim jawaban.")
         else:
             details = []
             total_points = 0
