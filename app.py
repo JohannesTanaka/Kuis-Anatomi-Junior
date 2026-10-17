@@ -62,7 +62,7 @@ st.markdown("""
 }
 .st-key-image_panel [data-testid="stImage"] img {
     display: block !important;
-    width: 650px !important;
+    width: 550px !important;
     max-width: none !important;
     height: auto !important;
     object-fit: contain !important;
@@ -259,7 +259,7 @@ if not st.session_state.quiz_submitted:
                     if path.exists():
                         # Kedua gambar memakai lebar render eksplisit yang sama.
                         # Lebar 650 px menjaga ukuran kiri-ke-kanan konsisten dan proporsi asli tetap terjaga.
-                        st.image(Image.open(path), width=650)
+                        st.image(Image.open(path), width=550)
                         shown += 1
                 if shown == 0:
                     st.info("Gambar Skull belum tersedia. Unggah gambar_tengkorak.png dan gambar_tengkorak_2.png ke repositori GitHub.")
