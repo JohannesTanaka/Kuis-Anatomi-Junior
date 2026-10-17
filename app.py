@@ -67,7 +67,7 @@ st.markdown("""
     height: auto !important;
     object-fit: contain !important;
 }
-@media (max-width: 900px) {
+@media (max-width: 600px) {
     .st-key-image_panel {
         position: static !important;
         width: 100% !important;
