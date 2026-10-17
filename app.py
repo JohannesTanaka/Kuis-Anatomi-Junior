@@ -291,7 +291,7 @@ all_section_questions = [q for q in questions if normalize(q["bagian"]) == norma
 quiz_stage = st.session_state.quiz_stage
 if normalize(section) == "skull":
     section_questions = [q for q in all_section_questions if str(q.get("gambar", "1")).strip() == str(quiz_stage)]
-    image_filename = "gambar_tengkorak.png" if quiz_stage == 1 else "gambar_tengkorak_2.png"
+    image_filename = {1: "gambar_tengkorak.png", 2: "gambar_tengkorak_2.png", 3: "gambar_tengkorak_3.png"}.get(quiz_stage, "gambar_tengkorak.png")
 else:
     section_questions = all_section_questions
     image_filename = IMAGE_FILES.get(section, "")
@@ -326,8 +326,8 @@ if not st.session_state.quiz_started:
     st.stop()
 
 # Stage 3: image and questions for the selected section.
-if normalize(section) == "skull" and quiz_stage == 2 and not section_questions:
-    st.warning("Belum ada soal untuk gambar kedua. Tambahkan kolom 'gambar' di Google Sheets, lalu isi 1 untuk soal gambar pertama dan 2 untuk soal gambar kedua.")
+if normalize(section) == "skull" and quiz_stage in (2, 3) and not section_questions:
+    st.warning(f"Belum ada soal untuk gambar {quiz_stage}. Tambahkan soal ke Google Sheets dengan bagian=Skull dan gambar={quiz_stage}.")
     if st.button("Kembali ke Gambar 1"):
         st.session_state.quiz_stage = 1
         st.session_state.quiz_submitted = False
@@ -435,14 +435,15 @@ with retry_col:
         st.session_state.quiz_submitted = False
         st.rerun()
 with next_col:
-    if normalize(section) == "skull" and quiz_stage == 1:
-        if st.button("Lanjut ke Gambar 2", type="primary", use_container_width=True):
-            if not any(str(q.get("gambar", "1")).strip() == "2" for q in all_section_questions):
-                st.error("Soal gambar kedua belum ditandai. Tambahkan kolom 'gambar' di Google Sheets: isi 1 untuk soal gambar pertama dan 2 untuk soal gambar kedua.")
+    if normalize(section) == "skull" and quiz_stage in (1, 2):
+        next_stage = quiz_stage + 1
+        if st.button(f"Lanjut ke Gambar {next_stage}", type="primary", use_container_width=True):
+            if not any(str(q.get("gambar", "1")).strip() == str(next_stage) for q in all_section_questions):
+                st.error(f"Soal gambar {next_stage} belum tersedia. Tambahkan soal di Google Sheets dengan bagian=Skull dan gambar={next_stage}.")
             else:
                 for item in section_questions:
                     st.session_state.pop(f"answer_{item['id']}", None)
-                st.session_state.quiz_stage = 2
+                st.session_state.quiz_stage = next_stage
                 st.session_state.quiz_submitted = False
                 st.rerun()
     else:
