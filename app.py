@@ -553,7 +553,7 @@ if not st.session_state.quiz_submitted:
 
     if send:
         if not confirm:
-            st.caption("⚠️ Centang konfirmasi terlebih dahulu sebelum mengirim jawaban.")
+            st.write("⚠️ Silakan centang konfirmasi terlebih dahulu sebelum mengirim jawaban.")
         else:
             details = []
             total_points = 0
