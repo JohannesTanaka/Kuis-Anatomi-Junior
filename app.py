@@ -46,35 +46,39 @@ st.markdown("""
 .quiz-title { font-size: 2rem; font-weight: 800; letter-spacing: .02em; margin-bottom: .2rem; }
 .quiz-subtitle { color: var(--text-color); opacity: .72; margin-bottom: 1.2rem; }
 .section-card { border: 1px solid rgba(128,128,128,.28); border-radius: 12px; padding: 1rem; }
-.st-key-image_panel {
+[class*="st-key-image_panel_stage_"] {
     position: fixed !important;
-    top: 1rem !important;
+    top: 0 !important;
     left: max(2rem, calc((100vw - 90rem) / 2)) !important;
     width: 570px !important;
     max-width: calc(100vw - 2rem) !important;
     box-sizing: border-box !important;
-    max-height: calc(100vh - 2rem) !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    padding-top: 0 !important;
+    margin-top: 0 !important;
     overflow-y: auto !important;
+    scroll-padding-top: 0 !important;
     overflow-x: hidden !important;
     scrollbar-width: thin !important;
     scrollbar-color: #b0b0b0 transparent !important;
     z-index: 10 !important;
 }
-.st-key-image_panel::-webkit-scrollbar {
+[class*="st-key-image_panel_stage_"]::-webkit-scrollbar {
     width: 4px !important;
 }
-.st-key-image_panel::-webkit-scrollbar-track {
+[class*="st-key-image_panel_stage_"]::-webkit-scrollbar-track {
     background: transparent !important;
 }
-.st-key-image_panel::-webkit-scrollbar-thumb {
+[class*="st-key-image_panel_stage_"]::-webkit-scrollbar-thumb {
     background: #b0b0b0 !important;
     border-radius: 10px !important;
 }
-.st-key-image_panel [data-testid="stImage"] {
+[class*="st-key-image_panel_stage_"] [data-testid="stImage"] {
     width: 100% !important;
     max-width: 100% !important;
 }
-.st-key-image_panel [data-testid="stImage"] img {
+[class*="st-key-image_panel_stage_"] [data-testid="stImage"] img {
     display: block !important;
     width: 550px !important;
     max-width: 100% !important;
@@ -83,13 +87,13 @@ st.markdown("""
     object-position: top center !important;
 }
 @media (max-width: 900px) {
-    .st-key-image_panel {
+    [class*="st-key-image_panel_stage_"] {
         position: static !important;
         width: 100% !important;
         max-width: none !important;
         max-height: none !important;
     }
-    .st-key-image_panel [data-testid="stImage"] img {
+    [class*="st-key-image_panel_stage_"] [data-testid="stImage"] img {
         width: 100% !important;
         max-width: 100% !important;
         height: auto !important;
@@ -337,7 +341,7 @@ if normalize(section) == "skull" and quiz_stage in (2, 3) and not section_questi
 if not st.session_state.quiz_submitted:
     left, right = st.columns([1.0, 1.15], gap="large")
     with left:
-        with st.container(key="image_panel"):
+        with st.container(key=f"image_panel_stage_{quiz_stage}"):
             if section == "Skull":
                 if image_path.exists():
                     st.image(Image.open(image_path), width=550)
