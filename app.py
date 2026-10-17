@@ -62,7 +62,7 @@ st.markdown("""
 }
 .st-key-image_panel [data-testid="stImage"] img {
     display: block !important;
-    width: 540px !important;
+    width: 550px !important;
     max-width: none !important;
     height: auto !important;
     object-fit: contain !important;
@@ -75,7 +75,7 @@ st.markdown("""
         max-height: none !important;
     }
     .st-key-image_panel [data-testid="stImage"] img {
-        width: min(650px, 100%) !important;
+        width: min(550px, 100%) !important;
         max-width: 100% !important;
     }
 }
@@ -329,14 +329,32 @@ if not st.session_state.quiz_submitted:
             st.rerun()
     st.stop()
 
-# Stage 4: score.
+# Stage 4: concise score and answer review
 result = st.session_state.result
-st.markdown(f'<div class="quiz-title">HASIL KUIS — {section.upper()}</div>', unsafe_allow_html=True)
-c1, c2, c3 = st.columns(3)
-c1.metric("Nilai", f"{result['nilai_persen']:.2f}%")
-c2.metric("Jawaban benar", f"{result['jawaban_benar']} / {result['jumlah_soal_dinilai']}")
-c3.metric("Peserta", result["nama_peserta"])
-st.caption(f"NIM: {result['nim']}")
+details = st.session_state.detail
+
+st.markdown(
+    f'<div class="quiz-title">HASIL KUIS — {section.upper()}</div>',
+    unsafe_allow_html=True
+)
+
+st.subheader(
+    f"Jawaban Benar: {result['jawaban_benar']}/{result['jumlah_soal_dinilai']}"
+)
+st.write(f"Nama: {result['nama_peserta']}")
+st.write(f"NIM: {result['nim']}")
+st.write(f"Nilai: {result['nilai_persen']:.2f}%")
+
+st.divider()
+
+for idx, item in enumerate(details, start=1):
+    status = "Benar" if item["benar"] else "Salah"
+    st.markdown(f"**{idx}. {status}**")
+    st.write(
+        f"Jawaban Peserta: "
+        f"{item['jawaban_peserta'].strip() or 'Tidak dijawab'}"
+    )
+    st.write(f"Jawaban yang Benar: {item['jawaban_benar']}")
 
 if st.button("Kembali ke menu bagian", type="primary"):
     reset_quiz()
