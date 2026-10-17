@@ -231,14 +231,12 @@ if not st.session_state.quiz_started:
 
 # Stage 3: image and questions for the selected section.
 if not st.session_state.quiz_submitted:
-    st.markdown(f'<div class="quiz-title">KUIS ANATOMI JUNIOR — {section.upper()}</div>', unsafe_allow_html=True)
-    left, right = st.columns([1.0, 1.15], gap="large")
     with left:
         with st.container(key="image_panel"):
             if section == "Skull":
                 skull_images = [
-                    ("gambar_tengkorak.png", "Gambar Skull 1"),
-                    ("gambar_tengkorak_2.png", "Gambar Skull 2"),
+                    ("gambar_tengkorak.png"),
+                    ("gambar_tengkorak_2.png"),
                 ]
                 shown = 0
                 for filename, caption in skull_images:
@@ -248,7 +246,10 @@ if not st.session_state.quiz_submitted:
                         shown += 1
                 if shown == 0:
                     st.info("Gambar Skull belum tersedia. Unggah gambar_tengkorak.png dan gambar_tengkorak_2.png ke repositori GitHub.")
-                st.caption("Referensi: Weir & Abrahams’ Imaging Atlas of Human Anatomy, Fifth Edition.")
+                st.caption(
+                "Referensi: Weir & Abrahams’ Imaging Atlas of Human Anatomy, Fifth Edition.\n\n"
+                "Jawaban harus sama persis dengan istilah yang digunakan dalam buku referensi."
+                )
             elif image_path.exists():
                 st.image(Image.open(image_path), caption=f"Gambar referensi • {section}", use_container_width=True)
             else:
