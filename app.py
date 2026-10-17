@@ -47,14 +47,23 @@ st.markdown("""
 .quiz-subtitle { color: var(--text-color); opacity: .72; margin-bottom: 1.2rem; }
 .section-card { border: 1px solid rgba(128,128,128,.28); border-radius: 12px; padding: 1rem; }
 .st-key-image_panel {
-    position: sticky !important;
+    position: fixed !important;
     top: 1rem !important;
+    left: max(2rem, calc((100vw - 90rem) / 2)) !important;
+    width: calc((100vw - 4rem) * 0.46) !important;
+    max-width: 42rem !important;
     max-height: calc(100vh - 2rem) !important;
     overflow-y: auto !important;
+    z-index: 10 !important;
 }
-.st-key-image_panel img { width: 100% !important; object-fit: contain !important; }
+.st-key-image_panel img { width: 100% !important; height: auto !important; object-fit: contain !important; }
 @media (max-width: 900px) {
-    .st-key-image_panel { position: static !important; max-height: none !important; }
+    .st-key-image_panel {
+        position: static !important;
+        width: 100% !important;
+        max-width: none !important;
+        max-height: none !important;
+    }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -226,7 +235,21 @@ if not st.session_state.quiz_submitted:
     left, right = st.columns([1.0, 1.15], gap="large")
     with left:
         with st.container(key="image_panel"):
-            if image_path.exists():
+            if section == "Skull":
+                skull_images = [
+                    ("gambar_tengkorak.png", "Gambar Skull 1"),
+                    ("gambar_tengkorak_2.png", "Gambar Skull 2"),
+                ]
+                shown = 0
+                for filename, caption in skull_images:
+                    path = BASE / filename
+                    if path.exists():
+                        st.image(Image.open(path), caption=caption, use_container_width=True)
+                        shown += 1
+                if shown == 0:
+                    st.info("Gambar Skull belum tersedia. Unggah gambar_tengkorak.png dan gambar_tengkorak_2.png ke repositori GitHub.")
+                st.caption("Referensi: Weir & Abrahams’ Imaging Atlas of Human Anatomy, Fifth Edition.")
+            elif image_path.exists():
                 st.image(Image.open(image_path), caption=f"Gambar referensi • {section}", use_container_width=True)
             else:
                 st.info(
