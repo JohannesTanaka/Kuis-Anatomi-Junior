@@ -18,28 +18,35 @@ st.set_page_config(page_title="Kuis Anatomi Radiologi", page_icon="🩻", layout
 
 st.markdown("""
 <style>
+/* Desktop: pin the image panel to the viewport while the questions scroll. */
 .st-key-image_panel {
-    position: sticky;
-    top: 1rem;
-    max-height: calc(100vh - 2rem);
-    overflow-y: auto;
-    padding: 0.4rem;
-    background: var(--background-color);
+    position: fixed !important;
+    top: 5.5rem !important;
+    left: 3vw !important;
+    width: min(36vw, 520px) !important;
+    max-height: calc(100vh - 6.5rem) !important;
+    overflow-y: auto !important;
+    padding: 0.4rem !important;
+    background: var(--background-color, white) !important;
     border-radius: 0.5rem;
+    z-index: 999 !important;
 }
 .st-key-image_panel img {
-    width: 100%;
-    max-height: calc(100vh - 8rem);
-    object-fit: contain;
+    width: 100% !important;
+    max-height: calc(100vh - 10rem) !important;
+    object-fit: contain !important;
 }
 div[data-testid="stTextInput"] input { min-height: 2.2rem; }
+
+/* On phones/tablets, avoid a fixed panel covering the form. */
 @media (max-width: 900px) {
     .st-key-image_panel {
-        position: static;
-        max-height: none;
-        overflow: visible;
+        position: static !important;
+        width: 100% !important;
+        max-height: none !important;
+        overflow: visible !important;
     }
-    .st-key-image_panel img { max-height: 60vh; }
+    .st-key-image_panel img { max-height: 60vh !important; }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -328,4 +335,3 @@ else:
         st.rerun()
 
 st.divider()
-st.caption("Pastikan kunci jawaban telah diverifikasi sebelum kuis digunakan.")
