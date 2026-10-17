@@ -62,7 +62,7 @@ st.markdown("""
 }
 .st-key-image_panel [data-testid="stImage"] img {
     display: block !important;
-    width: 550px !important;
+    width: 540px !important;
     max-width: none !important;
     height: auto !important;
     object-fit: contain !important;
