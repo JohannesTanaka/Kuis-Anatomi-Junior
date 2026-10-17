@@ -57,12 +57,13 @@ st.markdown("""
     z-index: 10 !important;
 }
 .st-key-image_panel [data-testid="stImage"] {
-    width: 100% !important;
+    width: auto !important;
+    max-width: none !important;
 }
 .st-key-image_panel [data-testid="stImage"] img {
     display: block !important;
-    width: 100% !important;
-    max-width: 100% !important;
+    width: 650px !important;
+    max-width: none !important;
     height: auto !important;
     object-fit: contain !important;
 }
@@ -72,6 +73,10 @@ st.markdown("""
         width: 100% !important;
         max-width: none !important;
         max-height: none !important;
+    }
+    .st-key-image_panel [data-testid="stImage"] img {
+        width: min(650px, 100%) !important;
+        max-width: 100% !important;
     }
 }
 </style>
