@@ -1,3 +1,4 @@
+
 import csv
 import json
 import re
@@ -47,32 +48,27 @@ st.set_page_config(
 st.markdown("""
 <style>
 .block-container { padding-top: 2rem; }
-
 .quiz-title {
     font-size: 2rem;
     font-weight: 800;
     letter-spacing: .02em;
     margin-bottom: .2rem;
 }
-
 .quiz-subtitle {
     color: var(--text-color);
     opacity: .72;
     margin-bottom: 1.2rem;
 }
-
 .section-card {
     border: 1px solid rgba(128,128,128,.28);
     border-radius: 12px;
     padding: 1rem;
 }
-
 .confirm-warning {
     color: #b45309;
     font-weight: 600;
     margin: 0 0 .75rem 0;
 }
-
 [class*="st-key-image_panel_stage_"] {
     position: fixed !important;
     top: 4.5rem !important;
@@ -91,25 +87,20 @@ st.markdown("""
     scrollbar-color: #b0b0b0 transparent !important;
     z-index: 10 !important;
 }
-
 [class*="st-key-image_panel_stage_"]::-webkit-scrollbar {
     width: 4px !important;
 }
-
 [class*="st-key-image_panel_stage_"]::-webkit-scrollbar-track {
     background: transparent !important;
 }
-
 [class*="st-key-image_panel_stage_"]::-webkit-scrollbar-thumb {
     background: #b0b0b0 !important;
     border-radius: 10px !important;
 }
-
 [class*="st-key-image_panel_stage_"] [data-testid="stImage"] {
     width: 100% !important;
     max-width: 100% !important;
 }
-
 [class*="st-key-image_panel_stage_"] [data-testid="stImage"] img {
     display: block !important;
     width: 550px !important;
@@ -118,7 +109,6 @@ st.markdown("""
     object-fit: contain !important;
     object-position: top center !important;
 }
-
 @media (max-width: 900px) {
     [class*="st-key-image_panel_stage_"] {
         position: static !important;
@@ -126,7 +116,6 @@ st.markdown("""
         max-width: none !important;
         max-height: none !important;
     }
-
     [class*="st-key-image_panel_stage_"] [data-testid="stImage"] img {
         width: 100% !important;
         max-width: 100% !important;
@@ -260,10 +249,7 @@ def load_questions():
         section = str(row.get("bagian", "")).strip()
 
         image_number = str(
-            row.get(
-                "gambar",
-                row.get("gambar_ke", row.get("tahap_gambar", "1"))
-            )
+            row.get("gambar", row.get("gambar_ke", row.get("tahap_gambar", "1")))
         ).strip() or "1"
 
         if not qid or not correct or not truthy(row.get("aktif", True)):
@@ -343,12 +329,10 @@ def reset_quiz():
             "quiz_started", "quiz_submitted", "participant_name",
             "participant_nim", "selected_section", "result", "detail",
             "quiz_stage", "stage_results", "stage_detail", "attempt_id",
-            "show_confirm_warning",
         }:
             del st.session_state[key]
 
 
-# INISIALISASI SESSION STATE
 if "selected_section" not in st.session_state:
     st.session_state.selected_section = None
 
@@ -370,10 +354,6 @@ if "stage_detail" not in st.session_state:
 if "attempt_id" not in st.session_state:
     st.session_state.attempt_id = uuid.uuid4().hex
 
-if "show_confirm_warning" not in st.session_state:
-    st.session_state.show_confirm_warning = False
-
-
 questions, load_error = load_questions()
 
 if load_error:
@@ -394,14 +374,14 @@ if st.session_state.selected_section is None:
 
     cols = st.columns(3)
 
-    for i, section_name in enumerate(SECTIONS):
+    for i, section in enumerate(SECTIONS):
         with cols[i % 3]:
             if st.button(
-                section_name,
-                key=f"section_{section_name}",
+                section,
+                key=f"section_{section}",
                 use_container_width=True,
             ):
-                st.session_state.selected_section = section_name
+                st.session_state.selected_section = section
                 st.rerun()
 
     st.stop()
@@ -483,7 +463,6 @@ if not st.session_state.quiz_started:
             st.session_state.participant_name = participant_name.strip()
             st.session_state.participant_nim = participant_nim.strip()
             st.session_state.quiz_started = True
-            st.session_state.show_confirm_warning = False
             st.rerun()
 
     st.stop()
@@ -503,23 +482,12 @@ if (
     if st.button("Kembali ke Gambar 1"):
         st.session_state.quiz_stage = 1
         st.session_state.quiz_submitted = False
-        st.session_state.show_confirm_warning = False
         st.rerun()
 
     st.stop()
 
 
 if not st.session_state.quiz_submitted:
-
-    # PERINGATAN KONFIRMASI DITAMPILKAN DI LUAR FORM
-    if st.session_state.show_confirm_warning:
-        st.markdown(
-            '<p class="confirm-warning">'
-            '⚠️ Silakan centang “Saya sudah memeriksa jawaban saya” '
-            'sebelum mengirim jawaban.</p>',
-            unsafe_allow_html=True,
-        )
-
     left, right = st.columns([1.0, 1.15], gap="large")
 
     with left:
@@ -566,6 +534,7 @@ if not st.session_state.quiz_submitted:
                     or f"Identifikasi struktur anatomi {idx}."
                 )
 
+                # ID widget unik untuk setiap percobaan.
                 answer_key = (
                     f"answer_{st.session_state.attempt_id}_{item['id']}"
                 )
@@ -587,71 +556,72 @@ if not st.session_state.quiz_submitted:
                 use_container_width=True,
             )
 
-    # VALIDASI KONFIRMASI
-    if send:
-        if not confirm:
-            st.session_state.show_confirm_warning = True
-            st.rerun()
-        else:
-            st.session_state.show_confirm_warning = False
-
-            details = []
-            total_points = 0
-            earned_points = 0
-            correct_count = 0
-
-            for item in section_questions:
-                answer_key = (
-                    f"answer_{st.session_state.attempt_id}_{item['id']}"
-                )
-
-                response = st.session_state.get(answer_key, "").strip()
-                points = item["poin"]
-                correct = answer_matches(response, item)
-
-                total_points += points
-                earned_points += points if correct else 0
-                correct_count += int(correct)
-
-                details.append({
-                    "id": item["id"],
-                    "pertanyaan": item["pertanyaan"],
-                    "jawaban_peserta": response,
-                    "jawaban_benar": item["jawaban_benar"],
-                    "benar": correct,
-                    "poin": points if correct else 0,
-                })
-
-            score = (
-                round(earned_points / total_points * 100, 2)
-                if total_points else 0
+        # Pesan ditampilkan tepat di bawah tombol submit, tanpa st.rerun tambahan.
+        if send and not confirm:
+            st.markdown(
+                '<p class="confirm-warning">'
+                '⚠️ Silakan centang “Saya sudah memeriksa jawaban saya” '
+                'sebelum mengirim jawaban.</p>',
+                unsafe_allow_html=True,
             )
 
-            result = {
-                "waktu": datetime.now().isoformat(timespec="seconds"),
-                "nama_peserta": st.session_state.participant_name,
-                "nim": st.session_state.participant_nim,
-                "bagian": section,
-                "jumlah_soal_dinilai": len(details),
-                "jawaban_benar": correct_count,
-                "nilai_persen": score,
-                "detail": " | ".join(
-                    f"{x['id']}={x['jawaban_peserta']}" for x in details
-                ),
-            }
+    if send and confirm:
+        details = []
+        total_points = 0
+        earned_points = 0
+        correct_count = 0
 
-            try:
-                save_result(result)
-            except Exception:
-                pass
+        for item in section_questions:
+            answer_key = (
+                f"answer_{st.session_state.attempt_id}_{item['id']}"
+            )
 
-            st.session_state.stage_results[str(quiz_stage)] = result
-            st.session_state.stage_detail[str(quiz_stage)] = details
-            st.session_state.result = result
-            st.session_state.detail = details
-            st.session_state.quiz_submitted = True
-            st.rerun()
+            response = st.session_state.get(answer_key, "").strip()
+            points = item["poin"]
+            correct = answer_matches(response, item)
 
+            total_points += points
+            earned_points += points if correct else 0
+            correct_count += int(correct)
+
+            details.append({
+                "id": item["id"],
+                "pertanyaan": item["pertanyaan"],
+                "jawaban_peserta": response,
+                "jawaban_benar": item["jawaban_benar"],
+                "benar": correct,
+                "poin": points if correct else 0,
+            })
+
+        score = (
+            round(earned_points / total_points * 100, 2)
+            if total_points else 0
+        )
+
+        result = {
+            "waktu": datetime.now().isoformat(timespec="seconds"),
+            "nama_peserta": st.session_state.participant_name,
+            "nim": st.session_state.participant_nim,
+            "bagian": section,
+            "jumlah_soal_dinilai": len(details),
+            "jawaban_benar": correct_count,
+            "nilai_persen": score,
+            "detail": " | ".join(
+                f"{x['id']}={x['jawaban_peserta']}" for x in details
+            ),
+        }
+
+        try:
+            save_result(result)
+        except Exception:
+            pass
+
+        st.session_state.stage_results[str(quiz_stage)] = result
+        st.session_state.stage_detail[str(quiz_stage)] = details
+        st.session_state.result = result
+        st.session_state.detail = details
+        st.session_state.quiz_submitted = True
+        st.rerun()
     st.stop()
 
 
@@ -660,7 +630,6 @@ result = st.session_state.stage_results.get(
     str(quiz_stage),
     st.session_state.get("result", {}),
 )
-
 details = st.session_state.stage_detail.get(
     str(quiz_stage),
     st.session_state.get("detail", []),
@@ -684,14 +653,12 @@ st.divider()
 for idx, item in enumerate(details, start=1):
     if item["benar"]:
         st.markdown(
-            f"<span style='color:#16803c;font-weight:700'>"
-            f"{idx}. Benar</span>",
+            f"<span style='color:#16803c;font-weight:700'>{idx}. Benar</span>",
             unsafe_allow_html=True,
         )
     else:
         st.markdown(
-            f"<span style='color:#d92d20;font-weight:700'>"
-            f"{idx}. Salah</span>",
+            f"<span style='color:#d92d20;font-weight:700'>{idx}. Salah</span>",
             unsafe_allow_html=True,
         )
 
@@ -709,7 +676,6 @@ with retry_col:
     if st.button("Ulangi Lagi", use_container_width=True):
         st.session_state.attempt_id = uuid.uuid4().hex
         st.session_state.quiz_submitted = False
-        st.session_state.show_confirm_warning = False
         st.rerun()
 
 with next_col:
@@ -733,7 +699,6 @@ with next_col:
                 st.session_state.attempt_id = uuid.uuid4().hex
                 st.session_state.quiz_stage = next_stage
                 st.session_state.quiz_submitted = False
-                st.session_state.show_confirm_warning = False
                 st.rerun()
     else:
         if st.button(
