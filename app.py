@@ -451,7 +451,22 @@ for idx, item in enumerate(details, start=1):
     st.write(f"Jawaban Peserta: {item['jawaban_peserta'].strip() or 'Tidak dijawab'}")
     st.write(f"Jawaban yang Benar: {item['jawaban_benar']}")
 st.divider()
-retry_col, next_col = st.columns(2)
+# Navigasi sesi: peserta dapat kembali ke gambar sebelumnya untuk mengerjakan ulang.
+if normalize(section) == "skull" and quiz_stage > 1:
+    back_col, retry_col, next_col = st.columns(3)
+else:
+    retry_col, next_col = st.columns(2)
+    back_col = None
+
+if back_col is not None:
+    with back_col:
+        previous_stage = quiz_stage - 1
+        if st.button(f"← Kembali ke Gambar {previous_stage}", use_container_width=True):
+            st.session_state.quiz_stage = previous_stage
+            st.session_state.attempt_id = uuid.uuid4().hex
+            st.session_state.quiz_submitted = False
+            st.rerun()
+
 with retry_col:
     if st.button("Ulangi Lagi", use_container_width=True):
         # Mulai percobaan baru dengan kunci widget yang benar-benar baru.
