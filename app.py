@@ -176,14 +176,10 @@ if not st.session_state.started:
             st.rerun()
 
 elif not st.session_state.submitted:
-    st.subheader(f"Peserta: {st.session_state.participant}")
-    st.caption("Isi jawaban di panel kanan. Gambar di panel kiri dirancang tetap terlihat saat halaman digulir.")
-    image_col, form_col = st.columns([1.05, 1.25], gap="large")
 
     with image_col:
         with st.container(key="image_panel"):
             st.image(Image.open(IMAGE_PATH), caption="Gambar referensi • Nomor 1–25", use_container_width=True)
-            st.caption("Gunakan nomor pada gambar untuk menjawab kolom di sebelah kanan.")
 
     with form_col:
         with st.form("quiz_answers"):
@@ -280,4 +276,3 @@ else:
         st.rerun()
 
 st.divider()
-st.caption("Pastikan seluruh kunci jawaban anatomi diverifikasi dengan atlas atau sumber pengajaran sebelum kuis digunakan.")
