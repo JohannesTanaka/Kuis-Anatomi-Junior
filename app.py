@@ -71,15 +71,16 @@ st.markdown("""
     border-radius: 10px !important;
 }
 .st-key-image_panel [data-testid="stImage"] {
-    width: auto !important;
-    max-width: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
 }
 .st-key-image_panel [data-testid="stImage"] img {
     display: block !important;
     width: 550px !important;
-    max-width: none !important;
+    max-width: 100% !important;
     height: auto !important;
     object-fit: contain !important;
+    object-position: top center !important;
 }
 @media (max-width: 900px) {
     .st-key-image_panel {
@@ -89,8 +90,11 @@ st.markdown("""
         max-height: none !important;
     }
     .st-key-image_panel [data-testid="stImage"] img {
-        width: min(550px, 100%) !important;
+        width: 100% !important;
         max-width: 100% !important;
+        height: auto !important;
+        object-fit: contain !important;
+        object-position: top center !important;
     }
 }
 </style>
@@ -154,6 +158,7 @@ def load_questions():
         prompt = str(row.get("pertanyaan", "")).strip()
         correct = str(row.get("jawaban_benar", "")).strip()
         section = str(row.get("bagian", "")).strip()
+        image_number = str(row.get("gambar", row.get("gambar_ke", row.get("tahap_gambar", "1"))).strip() or "1")
         if not qid or not correct or not truthy(row.get("aktif", True)):
             continue
         if not section:
@@ -170,6 +175,7 @@ def load_questions():
         questions.append({
             "id": qid,
             "bagian": section,
+            "gambar": image_number,
             "pertanyaan": prompt,
             "jawaban_benar": correct,
             "alternatif": alternatives,
@@ -209,6 +215,7 @@ def reset_quiz():
         if key.startswith("answer_") or key in {
             "quiz_started", "quiz_submitted", "participant_name",
             "participant_nim", "selected_section", "result", "detail",
+            "quiz_stage", "stage_results", "stage_detail",
         }:
             del st.session_state[key]
 
@@ -219,6 +226,12 @@ if "quiz_started" not in st.session_state:
     st.session_state.quiz_started = False
 if "quiz_submitted" not in st.session_state:
     st.session_state.quiz_submitted = False
+if "quiz_stage" not in st.session_state:
+    st.session_state.quiz_stage = 1
+if "stage_results" not in st.session_state:
+    st.session_state.stage_results = {}
+if "stage_detail" not in st.session_state:
+    st.session_state.stage_detail = {}
 
 questions, load_error = load_questions()
 if load_error:
@@ -238,8 +251,15 @@ if st.session_state.selected_section is None:
     st.stop()
 
 section = st.session_state.selected_section
-section_questions = [q for q in questions if normalize(q["bagian"]) == normalize(section)]
-image_path = BASE / IMAGE_FILES.get(section, "")
+all_section_questions = [q for q in questions if normalize(q["bagian"]) == normalize(section)]
+quiz_stage = st.session_state.quiz_stage
+if normalize(section) == "skull":
+    section_questions = [q for q in all_section_questions if str(q.get("gambar", "1")).strip() == str(quiz_stage)]
+    image_filename = "gambar_tengkorak.png" if quiz_stage == 1 else "gambar_tengkorak_2.png"
+else:
+    section_questions = all_section_questions
+    image_filename = IMAGE_FILES.get(section, "")
+image_path = BASE / image_filename
 
 # Stage 2: identity before showing the image/questions.
 if not st.session_state.quiz_started:
@@ -259,7 +279,8 @@ if not st.session_state.quiz_started:
             st.error("Nama dan NIM wajib diisi.")
         elif not section_questions:
             st.error(
-                f"Belum ada soal aktif untuk bagian {section}."
+                f"Belum ada soal aktif untuk bagian {section}. Tambahkan kolom 'bagian' di Google Sheets, "
+                "isi dengan nama bagian yang sesuai, dan pastikan 'aktif' bernilai TRUE."
             )
         else:
             st.session_state.participant_name = participant_name.strip()
@@ -269,25 +290,23 @@ if not st.session_state.quiz_started:
     st.stop()
 
 # Stage 3: image and questions for the selected section.
+if normalize(section) == "skull" and quiz_stage == 2 and not section_questions:
+    st.warning("Belum ada soal untuk gambar kedua. Tambahkan kolom 'gambar' di Google Sheets, lalu isi 1 untuk soal gambar pertama dan 2 untuk soal gambar kedua.")
+    if st.button("Kembali ke Gambar 1"):
+        st.session_state.quiz_stage = 1
+        st.session_state.quiz_submitted = False
+        st.rerun()
+    st.stop()
+
 if not st.session_state.quiz_submitted:
     left, right = st.columns([1.0, 1.15], gap="large")
     with left:
         with st.container(key="image_panel"):
             if section == "Skull":
-                skull_images = [
-                    "gambar_tengkorak.png",
-                    "gambar_tengkorak_2.png",
-                ]
-                shown = 0
-                for filename in skull_images:
-                    path = BASE / filename
-                    if path.exists():
-                        # Kedua gambar memakai lebar render eksplisit yang sama.
-                        # Lebar 550 px menjaga ukuran kiri-ke-kanan konsisten dan proporsi asli tetap terjaga.
-                        st.image(Image.open(path), width=550)
-                        shown += 1
-                if shown == 0:
-                    st.info("Gambar Skull belum tersedia. Unggah gambar_tengkorak.png dan gambar_tengkorak_2.png ke repositori GitHub.")
+                if image_path.exists():
+                    st.image(Image.open(image_path), width=550)
+                else:
+                    st.warning(f"Gambar tahap {quiz_stage} belum tersedia: {image_filename}")
                 st.markdown(
                     """
                     <div style="font-size:0.875rem; line-height:1.25;">
@@ -348,28 +367,22 @@ if not st.session_state.quiz_submitted:
                 save_result(result)
             except Exception:
                 pass
+            st.session_state.stage_results[str(quiz_stage)] = result
+            st.session_state.stage_detail[str(quiz_stage)] = details
             st.session_state.result = result
             st.session_state.detail = details
             st.session_state.quiz_submitted = True
             st.rerun()
     st.stop()
 
-# Stage 4: concise score and answer review
-result = st.session_state.result
-details = st.session_state.detail
-
-st.markdown(
-    f'<div class="quiz-title">HASIL KUIS — {section.upper()}</div>',
-    unsafe_allow_html=True
-)
-st.subheader(
-    f"Jawaban Benar: {result['jawaban_benar']}/{result['jumlah_soal_dinilai']}"
-)
-st.write(f"Nama: {result['nama_peserta']}")
-st.write(f"NIM: {result['nim']}")
-
+# Stage 4: tampilkan pembahasan, lalu beri pilihan ulangi atau lanjut.
+result = st.session_state.stage_results.get(str(quiz_stage), st.session_state.get("result", {}))
+details = st.session_state.stage_detail.get(str(quiz_stage), st.session_state.get("detail", []))
+st.markdown(f'<div class="quiz-title">HASIL KUIS — {section.upper()} • GAMBAR {quiz_stage}</div>', unsafe_allow_html=True)
+st.subheader(f"Jawaban Benar: {result.get('jawaban_benar', 0)}/{result.get('jumlah_soal_dinilai', len(details))}")
+st.write(f"Nama: {st.session_state.participant_name}")
+st.write(f"NIM: {st.session_state.participant_nim}")
 st.divider()
-
 for idx, item in enumerate(details, start=1):
     if item["benar"]:
         st.markdown(f"<span style='color:#16803c;font-weight:700'>{idx}. Benar</span>", unsafe_allow_html=True)
@@ -377,7 +390,26 @@ for idx, item in enumerate(details, start=1):
         st.markdown(f"<span style='color:#d92d20;font-weight:700'>{idx}. Salah</span>", unsafe_allow_html=True)
     st.write(f"Jawaban Peserta: {item['jawaban_peserta'].strip() or 'Tidak dijawab'}")
     st.write(f"Jawaban yang Benar: {item['jawaban_benar']}")
-
-if st.button("Kembali ke menu bagian", type="primary"):
-    reset_quiz()
-    st.rerun()
+st.divider()
+retry_col, next_col = st.columns(2)
+with retry_col:
+    if st.button("Ulangi Lagi", use_container_width=True):
+        for item in section_questions:
+            st.session_state.pop(f"answer_{item['id']}", None)
+        st.session_state.quiz_submitted = False
+        st.rerun()
+with next_col:
+    if normalize(section) == "skull" and quiz_stage == 1:
+        if st.button("Lanjut ke Gambar 2", type="primary", use_container_width=True):
+            if not any(str(q.get("gambar", "1")).strip() == "2" for q in all_section_questions):
+                st.error("Soal gambar kedua belum ditandai. Tambahkan kolom 'gambar' di Google Sheets: isi 1 untuk soal gambar pertama dan 2 untuk soal gambar kedua.")
+            else:
+                for item in section_questions:
+                    st.session_state.pop(f"answer_{item['id']}", None)
+                st.session_state.quiz_stage = 2
+                st.session_state.quiz_submitted = False
+                st.rerun()
+    else:
+        if st.button("Selesai / Kembali ke menu", type="primary", use_container_width=True):
+            reset_quiz()
+            st.rerun()
