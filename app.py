@@ -248,7 +248,7 @@ if not st.session_state.quiz_submitted:
                 if shown == 0:
                     st.info("Gambar Skull belum tersedia. Unggah gambar_tengkorak.png dan gambar_tengkorak_2.png ke repositori GitHub.")
                 st.caption(
-                    "Referensi: Weir & Abrahams’ Imaging Atlas of Human Anatomy, Fifth Edition.\n\n"
+                    "Referensi: Weir & Abrahams’ Imaging Atlas of Human Anatomy, Fifth Edition.\n"
                     "Jawaban harus sama persis dengan istilah yang digunakan dalam buku referensi."
                 )
             elif image_path.exists():
@@ -291,8 +291,6 @@ if not st.session_state.quiz_submitted:
             score = round(earned_points / total_points * 100, 2) if total_points else 0
             result = {
                 "waktu": datetime.now().isoformat(timespec="seconds"),
-                "nama_peserta": st.session_state.participant_name,
-                "nim": st.session_state.participant_nim,
                 "bagian": section,
                 "jumlah_soal_dinilai": len(details),
                 "jawaban_benar": correct_count,
