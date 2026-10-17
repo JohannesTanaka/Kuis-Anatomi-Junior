@@ -1,4 +1,3 @@
-```python
 import csv
 import json
 import re
@@ -477,7 +476,8 @@ if not st.session_state.quiz_started:
             st.error("Nama dan NIM wajib diisi.")
         elif not section_questions:
             st.error(
-                f"Belum ada soal aktif untuk bagian {section}."
+                f"Belum ada soal aktif untuk bagian {section}. "
+                "Pastikan kolom 'bagian' dan 'aktif' sudah benar."
             )
         else:
             st.session_state.participant_name = participant_name.strip()
@@ -512,7 +512,6 @@ if (
 if not st.session_state.quiz_submitted:
 
     # PERINGATAN KONFIRMASI DITAMPILKAN DI LUAR FORM
-    # agar tetap terlihat setelah st.rerun().
     if st.session_state.show_confirm_warning:
         st.markdown(
             '<p class="confirm-warning">'
@@ -593,7 +592,6 @@ if not st.session_state.quiz_submitted:
         if not confirm:
             st.session_state.show_confirm_warning = True
             st.rerun()
-
         else:
             st.session_state.show_confirm_warning = False
 
@@ -745,4 +743,3 @@ with next_col:
         ):
             reset_quiz()
             st.rerun()
-```
