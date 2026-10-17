@@ -48,14 +48,15 @@ st.markdown("""
 .section-card { border: 1px solid rgba(128,128,128,.28); border-radius: 12px; padding: 1rem; }
 [class*="st-key-image_panel_stage_"] {
     position: fixed !important;
-    top: 0 !important;
+    /* Keep the fixed panel below Streamlit's top toolbar/header. */
+    top: 4.5rem !important;
     left: max(2rem, calc((100vw - 90rem) / 2)) !important;
     width: 570px !important;
     max-width: calc(100vw - 2rem) !important;
     box-sizing: border-box !important;
-    height: 100vh !important;
-    max-height: 100vh !important;
-    padding-top: 0 !important;
+    height: calc(100vh - 4.5rem) !important;
+    max-height: calc(100vh - 4.5rem) !important;
+    padding-top: 0.25rem !important;
     margin-top: 0 !important;
     overflow-y: auto !important;
     scroll-padding-top: 0 !important;
