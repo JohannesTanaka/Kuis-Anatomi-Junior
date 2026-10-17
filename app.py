@@ -56,7 +56,16 @@ st.markdown("""
     overflow-y: auto !important;
     z-index: 10 !important;
 }
-.st-key-image_panel img { width: 100% !important; height: auto !important; object-fit: contain !important; }
+.st-key-image_panel [data-testid="stImage"] {
+    width: 100% !important;
+}
+.st-key-image_panel [data-testid="stImage"] img {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    object-fit: contain !important;
+}
 @media (max-width: 900px) {
     .st-key-image_panel {
         position: static !important;
@@ -243,8 +252,8 @@ if not st.session_state.quiz_submitted:
                 for filename in skull_images:
                     path = BASE / filename
                     if path.exists():
-                        # Pakai lebar tampilan yang sama untuk gambar A dan B.
-                        st.image(Image.open(path), width=650)
+                        # Paksa kedua gambar memenuhi lebar panel yang sama.
+                        st.image(Image.open(path), use_container_width=True)
                         shown += 1
                 if shown == 0:
                     st.info("Gambar Skull belum tersedia. Unggah gambar_tengkorak.png dan gambar_tengkorak_2.png ke repositori GitHub.")
