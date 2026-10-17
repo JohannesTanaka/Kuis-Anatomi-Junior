@@ -259,8 +259,7 @@ if not st.session_state.quiz_started:
             st.error("Nama dan NIM wajib diisi.")
         elif not section_questions:
             st.error(
-                f"Belum ada soal aktif untuk bagian {section}. Tambahkan kolom 'bagian' di Google Sheets, "
-                "isi dengan nama bagian yang sesuai, dan pastikan 'aktif' bernilai TRUE."
+                f"Belum ada soal aktif untuk bagian {section}."
             )
         else:
             st.session_state.participant_name = participant_name.strip()
