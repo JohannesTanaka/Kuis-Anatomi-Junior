@@ -236,19 +236,15 @@ if not st.session_state.quiz_submitted:
         with st.container(key="image_panel"):
             if section == "Skull":
                 skull_images = [
-    "gambar_tengkorak.png",
-    "gambar_tengkorak_2.png",
-]
-shown = 0
-
-for filename in skull_images:
-    path = BASE / filename
-    if path.exists():
-        st.image(
-            Image.open(path),
-            use_container_width=True
-        )
-        shown += 1
+                    ("gambar_tengkorak.png", "Gambar Skull 1"),
+                    ("gambar_tengkorak_2.png", "Gambar Skull 2"),
+                ]
+                shown = 0
+                for filename, caption in skull_images:
+                    path = BASE / filename
+                    if path.exists():
+                        st.image(Image.open(path), use_container_width=True)
+                        shown += 1
                 if shown == 0:
                     st.info("Gambar Skull belum tersedia. Unggah gambar_tengkorak.png dan gambar_tengkorak_2.png ke repositori GitHub.")
                 st.caption(
