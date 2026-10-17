@@ -9,44 +9,52 @@ import streamlit as st
 from PIL import Image
 
 BASE = Path(__file__).parent
-IMAGE_PATH = BASE / "gambar_tengkorak.png"
-LOCAL_SERVICE_ACCOUNT = BASE / "service_account.json"
 DEFAULT_SPREADSHEET_ID = "1Db6qV4YxJwIl3eTF43y4t30gyrsKHMGSQlvfWrNQfIQ"
+LOCAL_SERVICE_ACCOUNT = BASE / "service_account.json"
 RESULTS_PATH = BASE / "hasil_kuis_lokal.csv"
 
-st.set_page_config(page_title="Kuis Anatomi Radiologi", page_icon="🩻", layout="wide")
+SECTIONS = [
+    "Skull", "Neck", "Vertebra", "Shoulder", "Humerus",
+    "Elbow", "Forearm", "Hand", "Chest", "Pelvis",
+    "Femur", "Genu", "Cruris", "Ankle", "Foot",
+]
+
+# Nama file gambar untuk tiap bagian. Untuk Skull, gunakan gambar yang sudah ada.
+IMAGE_FILES = {
+    "Skull": "gambar_tengkorak.png",
+    "Neck": "gambar_neck.png",
+    "Vertebra": "gambar_vertebra.png",
+    "Shoulder": "gambar_shoulder.png",
+    "Humerus": "gambar_humerus.png",
+    "Elbow": "gambar_elbow.png",
+    "Forearm": "gambar_forearm.png",
+    "Hand": "gambar_hand.png",
+    "Chest": "gambar_chest.png",
+    "Pelvis": "gambar_pelvis.png",
+    "Femur": "gambar_femur.png",
+    "Genu": "gambar_genu.png",
+    "Cruris": "gambar_cruris.png",
+    "Ankle": "gambar_ankle.png",
+    "Foot": "gambar_foot.png",
+}
+
+st.set_page_config(page_title="KUIS ANATOMI JUNIOR", page_icon="🩻", layout="wide")
 
 st.markdown("""
 <style>
-/* Desktop: pin the image panel to the viewport while the questions scroll. */
+.block-container { padding-top: 2rem; }
+.quiz-title { font-size: 2rem; font-weight: 800; letter-spacing: .02em; margin-bottom: .2rem; }
+.quiz-subtitle { color: var(--text-color); opacity: .72; margin-bottom: 1.2rem; }
+.section-card { border: 1px solid rgba(128,128,128,.28); border-radius: 12px; padding: 1rem; }
 .st-key-image_panel {
-    position: fixed !important;
-    top: 5.5rem !important;
-    left: 3vw !important;
-    width: min(36vw, 520px) !important;
-    max-height: calc(100vh - 6.5rem) !important;
+    position: sticky !important;
+    top: 1rem !important;
+    max-height: calc(100vh - 2rem) !important;
     overflow-y: auto !important;
-    padding: 0.4rem !important;
-    background: var(--background-color, white) !important;
-    border-radius: 0.5rem;
-    z-index: 999 !important;
 }
-.st-key-image_panel img {
-    width: 100% !important;
-    max-height: calc(100vh - 10rem) !important;
-    object-fit: contain !important;
-}
-div[data-testid="stTextInput"] input { min-height: 2.2rem; }
-
-/* On phones/tablets, avoid a fixed panel covering the form. */
+.st-key-image_panel img { width: 100% !important; object-fit: contain !important; }
 @media (max-width: 900px) {
-    .st-key-image_panel {
-        position: static !important;
-        width: 100% !important;
-        max-height: none !important;
-        overflow: visible !important;
-    }
-    .st-key-image_panel img { max-height: 60vh !important; }
+    .st-key-image_panel { position: static !important; max-height: none !important; }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -65,15 +73,12 @@ def get_credentials_and_sheet_id():
     try:
         if "gcp_service_account" in st.secrets:
             credentials_info = dict(st.secrets["gcp_service_account"])
-            spreadsheet_id = str(
-                st.secrets.get("spreadsheet_id", DEFAULT_SPREADSHEET_ID)
-            ).strip()
+            spreadsheet_id = str(st.secrets.get("spreadsheet_id", DEFAULT_SPREADSHEET_ID)).strip()
     except Exception:
         pass
-
     if credentials_info is None and LOCAL_SERVICE_ACCOUNT.exists():
-        with open(LOCAL_SERVICE_ACCOUNT, "r", encoding="utf-8") as file:
-            credentials_info = json.load(file)
+        with open(LOCAL_SERVICE_ACCOUNT, "r", encoding="utf-8") as f:
+            credentials_info = json.load(f)
     return credentials_info, spreadsheet_id
 
 
@@ -82,256 +87,212 @@ def read_google_sheet_rows():
     credentials_info, spreadsheet_id = get_credentials_and_sheet_id()
     if not credentials_info:
         raise RuntimeError(
-            "Kredensial Google Sheets belum tersedia. Di Streamlit Cloud, isi "
-            "Settings → Secrets. Untuk lokal, gunakan service_account.json. "
+            "Kredensial Google Sheets belum tersedia. Isi Settings → Secrets di Streamlit Cloud. "
             "Jangan unggah file JSON kredensial ke GitHub."
         )
-
     import gspread
     from google.oauth2.service_account import Credentials
-
-    scopes = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
     credentials = Credentials.from_service_account_info(
-        credentials_info, scopes=scopes
+        credentials_info,
+        scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"],
     )
     client = gspread.authorize(credentials)
     spreadsheet = client.open_by_key(spreadsheet_id)
     return spreadsheet.sheet1.get_all_records()
 
 
-def load_keys():
+def truthy(value):
+    return str(value or "").strip().lower() in {"true", "1", "yes", "ya"}
+
+
+def load_questions():
     try:
         rows = read_google_sheet_rows()
     except Exception as exc:
-        return {}, (
-            "Gagal membaca Google Sheets. Periksa Secrets, ID spreadsheet, izin "
-            "Viewer untuk service account, Google Sheets API, dan header kolom. "
-            f"Detail error: {exc}"
-        )
+        return [], f"Gagal membaca Google Sheets. Periksa Secrets, ID spreadsheet, izin Viewer untuk service account, dan header kolom. Detail: {exc}"
 
-    keys = {}
-    active_values = {"true", "1", "yes", "ya"}
+    questions = []
     for row in rows:
         qid = str(row.get("id", "")).strip()
-        active = str(row.get("aktif", "true")).strip().lower()
+        prompt = str(row.get("pertanyaan", "")).strip()
         correct = str(row.get("jawaban_benar", "")).strip()
-        if not qid or active not in active_values or not correct:
+        section = str(row.get("bagian", "")).strip()
+        if not qid or not correct or not truthy(row.get("aktif", True)):
             continue
-
-        raw_alternatives = str(row.get("alternatif_jawaban", "") or "")
+        if not section:
+            # Backward compatibility: existing questions without "bagian" are treated as Skull.
+            section = "Skull"
         alternatives = [
-            item.strip()
-            for item in re.split(r"[|;\n]+", raw_alternatives)
-            if item.strip()
+            x.strip() for x in re.split(r"[|;\n]+", str(row.get("alternatif_jawaban", "") or ""))
+            if x.strip()
         ]
         try:
             points = max(1, int(float(row.get("poin") or 1)))
         except (ValueError, TypeError):
             points = 1
-
-        keys[qid] = {
-            "pertanyaan": str(row.get("pertanyaan", "")).strip(),
+        questions.append({
+            "id": qid,
+            "bagian": section,
+            "pertanyaan": prompt,
             "jawaban_benar": correct,
             "alternatif": alternatives,
             "poin": points,
-        }
-
-    if not keys:
-        return {}, (
-            "Tidak ada kunci jawaban aktif. Pastikan kolom aktif berisi TRUE "
-            "dan jawaban_benar tidak kosong untuk soal yang ingin dinilai."
-        )
-    return keys, None
+        })
+    return questions, None
 
 
 def answer_matches(response, item):
     accepted = [item["jawaban_benar"]] + item["alternatif"]
-    return normalize(response) in {
-        normalize(value) for value in accepted if normalize(value)
-    }
+    return normalize(response) in {normalize(x) for x in accepted if normalize(x)}
 
 
 def save_result(result):
-    file_exists = RESULTS_PATH.exists()
-    with open(RESULTS_PATH, "a", newline="", encoding="utf-8-sig") as file:
-        writer = csv.DictWriter(file, fieldnames=list(result.keys()))
-        if not file_exists:
+    exists = RESULTS_PATH.exists()
+    with open(RESULTS_PATH, "a", newline="", encoding="utf-8-sig") as f:
+        writer = csv.DictWriter(f, fieldnames=list(result.keys()))
+        if not exists:
             writer.writeheader()
         writer.writerow(result)
 
 
-# Judul besar dan pengantar di bagian atas dihilangkan sesuai permintaan.
-keys, load_error = load_keys()
+def reset_quiz():
+    for key in list(st.session_state.keys()):
+        if key.startswith("answer_") or key in {
+            "quiz_started", "quiz_submitted", "participant_name",
+            "participant_nim", "selected_section", "result", "detail",
+        }:
+            del st.session_state[key]
+
+
+if "selected_section" not in st.session_state:
+    st.session_state.selected_section = None
+if "quiz_started" not in st.session_state:
+    st.session_state.quiz_started = False
+if "quiz_submitted" not in st.session_state:
+    st.session_state.quiz_submitted = False
+
+questions, load_error = load_questions()
 if load_error:
     st.error(load_error)
     st.stop()
 
-if not IMAGE_PATH.exists():
-    st.error(
-        "File gambar_tengkorak.png tidak ditemukan. Unggah file tersebut ke "
-        "repositori yang sama dengan app.py."
-    )
+# Stage 1: choose anatomy section.
+if st.session_state.selected_section is None:
+    st.markdown('<div class="quiz-title">KUIS ANATOMI JUNIOR</div>', unsafe_allow_html=True)
+    st.markdown('<div class="quiz-subtitle">Pilih bagian anatomi yang ingin dikerjakan.</div>', unsafe_allow_html=True)
+    cols = st.columns(3)
+    for i, section in enumerate(SECTIONS):
+        with cols[i % 3]:
+            if st.button(section, key=f"section_{section}", use_container_width=True):
+                st.session_state.selected_section = section
+                st.rerun()
     st.stop()
 
-exam_key = keys.get("jenis_pemeriksaan")
-anatomy_keys = {n: keys.get(f"anatomi_{n:02d}") for n in range(1, 26)}
+section = st.session_state.selected_section
+section_questions = [q for q in questions if normalize(q["bagian"]) == normalize(section)]
+image_path = BASE / IMAGE_FILES.get(section, "")
 
-if "started" not in st.session_state:
-    st.session_state.started = False
-if "submitted" not in st.session_state:
-    st.session_state.submitted = False
-
-if not st.session_state.started:
-    name = st.text_input("Nama peserta")
-    st.image(
-        Image.open(IMAGE_PATH),
-        caption="Radiografi tengkorak dengan penanda nomor 1–25",
-        width=560,
-    )
-    if st.button("Mulai menjawab", type="primary"):
-        if not name.strip():
-            st.error("Masukkan nama peserta terlebih dahulu.")
-        else:
-            st.session_state.participant = name.strip()
-            st.session_state.started = True
+# Stage 2: identity before showing the image/questions.
+if not st.session_state.quiz_started:
+    st.markdown('<div class="quiz-title">KUIS ANATOMI JUNIOR</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="quiz-subtitle">Bagian terpilih: <b>{section}</b></div>', unsafe_allow_html=True)
+    with st.form("participant_form"):
+        participant_name = st.text_input("Nama")
+        participant_nim = st.text_input("NIM")
+        begin = st.form_submit_button("Lanjut ke soal", type="primary", use_container_width=True)
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        if st.button("← Kembali memilih bagian", use_container_width=True):
+            st.session_state.selected_section = None
             st.rerun()
+    if begin:
+        if not participant_name.strip() or not participant_nim.strip():
+            st.error("Nama dan NIM wajib diisi.")
+        elif not section_questions:
+            st.error(
+                f"Belum ada soal aktif untuk bagian {section}. Tambahkan kolom 'bagian' di Google Sheets, "
+                "isi dengan nama bagian yang sesuai, dan pastikan 'aktif' bernilai TRUE."
+            )
+        else:
+            st.session_state.participant_name = participant_name.strip()
+            st.session_state.participant_nim = participant_nim.strip()
+            st.session_state.quiz_started = True
+            st.rerun()
+    st.stop()
 
-elif not st.session_state.submitted:
-    image_col, form_col = st.columns([1.0, 1.25], gap="large")
-    with image_col:
+# Stage 3: image and questions for the selected section.
+if not st.session_state.quiz_submitted:
+    st.markdown(f'<div class="quiz-title">KUIS ANATOMI JUNIOR — {section.upper()}</div>', unsafe_allow_html=True)
+    left, right = st.columns([1.0, 1.15], gap="large")
+    with left:
         with st.container(key="image_panel"):
-            st.image(
-                Image.open(IMAGE_PATH),
-                caption="Gambar referensi • Nomor 1–25",
-                use_container_width=True,
-            )
-
-    with form_col:
-        st.caption(f"Peserta: {st.session_state.participant}")
-        with st.form("quiz_answers"):
-            if exam_key:
-                st.markdown("### A. Jenis pemeriksaan")
-                st.text_input(
-                    "Apa jenis pemeriksaan pada gambar ini?",
-                    key="answer_exam",
-                    placeholder="Ketik jenis pemeriksaan...",
+            if image_path.exists():
+                st.image(Image.open(image_path), caption=f"Gambar referensi • {section}", use_container_width=True)
+            else:
+                st.info(
+                    f"Gambar untuk bagian {section} belum tersedia. Unggah file "
+                    f"`{IMAGE_FILES.get(section, 'gambar_bagian.png')}` ke repositori GitHub."
                 )
-
-            active_anatomy = [
-                n for n in range(1, 26) if anatomy_keys.get(n) is not None
-            ]
-            if active_anatomy:
-                st.markdown("### B. Struktur anatomi")
-                for n in active_anatomy:
-                    item = anatomy_keys[n]
-                    prompt = item["pertanyaan"] or (
-                        f"Identifikasi struktur anatomi nomor {n}."
-                    )
-                    st.text_input(
-                        prompt,
-                        key=f"answer_{n:02d}",
-                        placeholder=f"Jawaban nomor {n}...",
-                    )
-
+    with right:
+        st.caption(f"Nama: {st.session_state.participant_name}  •  NIM: {st.session_state.participant_nim}")
+        with st.form("quiz_answers"):
+            for idx, item in enumerate(section_questions, start=1):
+                prompt = item["pertanyaan"] or f"Identifikasi struktur anatomi {idx}."
+                st.text_input(prompt, key=f"answer_{item['id']}", placeholder="Ketik jawaban...")
             confirm = st.checkbox("Saya sudah memeriksa jawaban saya.")
-            send = st.form_submit_button(
-                "Kirim jawaban dan lihat nilai",
-                type="primary",
-                use_container_width=True,
-            )
+            send = st.form_submit_button("Kirim jawaban dan lihat nilai", type="primary", use_container_width=True)
 
     if send:
         if not confirm:
             st.error("Centang konfirmasi sebelum mengirim jawaban.")
         else:
             details = []
-            total_points = 0
-            earned_points = 0
-            correct_count = 0
-
-            if exam_key:
-                response = st.session_state.get("answer_exam", "").strip()
-                points = exam_key["poin"]
-                correct = answer_matches(response, exam_key)
-                total_points += points
-                earned_points += points if correct else 0
-                correct_count += int(correct)
-                details.append({
-                    "nomor": "Jenis pemeriksaan",
-                    "jawaban_peserta": response,
-                    "jawaban_benar": exam_key["jawaban_benar"],
-                    "benar": correct,
-                    "poin": points if correct else 0,
-                })
-
-            for n in range(1, 26):
-                item = anatomy_keys.get(n)
-                if not item:
-                    continue
-                response = st.session_state.get(f"answer_{n:02d}", "").strip()
+            total_points = earned_points = correct_count = 0
+            for item in section_questions:
+                response = st.session_state.get(f"answer_{item['id']}", "").strip()
                 points = item["poin"]
                 correct = answer_matches(response, item)
                 total_points += points
                 earned_points += points if correct else 0
                 correct_count += int(correct)
                 details.append({
-                    "nomor": n,
+                    "id": item["id"],
+                    "pertanyaan": item["pertanyaan"],
                     "jawaban_peserta": response,
                     "jawaban_benar": item["jawaban_benar"],
                     "benar": correct,
                     "poin": points if correct else 0,
                 })
+            score = round(earned_points / total_points * 100, 2) if total_points else 0
+            result = {
+                "waktu": datetime.now().isoformat(timespec="seconds"),
+                "nama_peserta": st.session_state.participant_name,
+                "nim": st.session_state.participant_nim,
+                "bagian": section,
+                "jumlah_soal_dinilai": len(details),
+                "jawaban_benar": correct_count,
+                "nilai_persen": score,
+                "detail": " | ".join(f"{x['id']}={x['jawaban_peserta']}" for x in details),
+            }
+            try:
+                save_result(result)
+            except Exception:
+                pass
+            st.session_state.result = result
+            st.session_state.detail = details
+            st.session_state.quiz_submitted = True
+            st.rerun()
+    st.stop()
 
-            if total_points == 0:
-                st.error("Tidak ada soal aktif yang dapat dinilai.")
-            else:
-                score = round(earned_points / total_points * 100, 2)
-                result = {
-                    "waktu": datetime.now().isoformat(timespec="seconds"),
-                    "nama_peserta": st.session_state.participant,
-                    "jumlah_soal_dinilai": len(details),
-                    "jawaban_benar": correct_count,
-                    "nilai_persen": score,
-                    "detail": " | ".join(
-                        f"{item['nomor']}={item['jawaban_peserta']}"
-                        for item in details
-                    ),
-                }
-                try:
-                    save_result(result)
-                except Exception:
-                    pass
-                st.session_state.result = result
-                st.session_state.detail = details
-                st.session_state.submitted = True
-                st.rerun()
+# Stage 4: score.
+result = st.session_state.result
+st.markdown(f'<div class="quiz-title">HASIL KUIS — {section.upper()}</div>', unsafe_allow_html=True)
+c1, c2, c3 = st.columns(3)
+c1.metric("Nilai", f"{result['nilai_persen']:.2f}%")
+c2.metric("Jawaban benar", f"{result['jawaban_benar']} / {result['jumlah_soal_dinilai']}")
+c3.metric("Peserta", result["nama_peserta"])
+st.caption(f"NIM: {result['nim']}")
 
-else:
-    result = st.session_state.result
-    details = st.session_state.detail
-    st.subheader("Hasil kuis")
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Nilai", f"{result['nilai_persen']:.2f}%")
-    col2.metric(
-        "Jawaban benar",
-        f"{result['jawaban_benar']} / {result['jumlah_soal_dinilai']}",
-    )
-    col3.metric("Peserta", result["nama_peserta"])
-    st.caption(
-        "Penyimpanan CSV di hosting bersifat lokal dan belum menjadi penyimpanan "
-        "bersama lintas peserta."
-    )
-    st.markdown("## Pembahasan")
-    for item in details:
-        status = "Benar" if item["benar"] else "Perlu diperbaiki"
-        with st.expander(f"{item['nomor']} — {status}"):
-            st.write("Jawaban Anda:", item["jawaban_peserta"] or "(kosong)")
-            st.write("Kunci jawaban:", item["jawaban_benar"])
-
-    if st.button("Kembali ke awal / peserta berikutnya", type="primary"):
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
-        st.cache_data.clear()
-        st.rerun()
-
-st.divider()
+if st.button("Kembali ke menu bagian", type="primary"):
+    reset_quiz()
+    st.rerun()
