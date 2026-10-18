@@ -43,19 +43,27 @@ st.set_page_config(page_title="KUIS ANATOMI JUNIOR", page_icon="🩻", layout="w
 
 st.markdown("""
 <style>
-/* Latar putih bertekstur halus seperti corak referensi */
+/* Latar putih murni bertekstur abu-abu sangat halus — tanpa warna krem */
 .stApp {
-    background-color: #f7f7f5;
+    background-color: #FFFFFF !important;
     background-image:
-        radial-gradient(circle, rgba(120, 120, 120, 0.10) 0.7px, transparent 0.9px),
-        radial-gradient(circle, rgba(160, 160, 160, 0.07) 0.6px, transparent 0.9px),
-        radial-gradient(circle, rgba(100, 100, 100, 0.04) 0.5px, transparent 0.8px);
+        radial-gradient(circle, rgba(90, 90, 90, 0.10) 0.65px, transparent 0.9px),
+        radial-gradient(circle, rgba(120, 120, 120, 0.06) 0.55px, transparent 0.85px),
+        radial-gradient(circle, rgba(70, 70, 70, 0.035) 0.5px, transparent 0.8px) !important;
     background-size: 5px 5px, 8px 8px, 3px 3px;
     background-position: 0 0, 2px 3px, 1px 2px;
 }
 [data-testid="stAppViewContainer"],
-[data-testid="stMain"] { background: transparent; }
-[data-testid="stSidebar"] { background-color: rgba(250, 250, 248, 0.94); }
+[data-testid="stMain"],
+.main { background-color: transparent !important; }
+[data-testid="stSidebar"] { background-color: #FFFFFF !important; }
+[data-testid="stHeader"] { background-color: rgba(255, 255, 255, 0.96) !important; }
+[data-testid="stForm"] {
+    background-color: rgba(255, 255, 255, 0.94) !important;
+    border: 1px solid #D9DDE2;
+    border-radius: 12px;
+}
+.stTextInput input { background-color: #F3F4F6 !important; }
 .block-container { padding-top: 2rem; }
 .quiz-title { font-size: 2rem; font-weight: 800; letter-spacing: .02em; margin-bottom: .2rem; }
 .quiz-subtitle { color: var(--text-color); opacity: .72; margin-bottom: 1.2rem; }
