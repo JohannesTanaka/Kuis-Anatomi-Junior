@@ -43,6 +43,19 @@ st.set_page_config(page_title="KUIS ANATOMI JUNIOR", page_icon="🩻", layout="w
 
 st.markdown("""
 <style>
+/* Latar putih bertekstur halus seperti corak referensi */
+.stApp {
+    background-color: #f7f7f5;
+    background-image:
+        radial-gradient(circle, rgba(120, 120, 120, 0.10) 0.7px, transparent 0.9px),
+        radial-gradient(circle, rgba(160, 160, 160, 0.07) 0.6px, transparent 0.9px),
+        radial-gradient(circle, rgba(100, 100, 100, 0.04) 0.5px, transparent 0.8px);
+    background-size: 5px 5px, 8px 8px, 3px 3px;
+    background-position: 0 0, 2px 3px, 1px 2px;
+}
+[data-testid="stAppViewContainer"],
+[data-testid="stMain"] { background: transparent; }
+[data-testid="stSidebar"] { background-color: rgba(250, 250, 248, 0.94); }
 .block-container { padding-top: 2rem; }
 .quiz-title { font-size: 2rem; font-weight: 800; letter-spacing: .02em; margin-bottom: .2rem; }
 .quiz-subtitle { color: var(--text-color); opacity: .72; margin-bottom: 1.2rem; }
