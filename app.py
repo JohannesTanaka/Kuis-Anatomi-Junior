@@ -325,6 +325,20 @@ else:
     max_stages = 1
 image_path = BASE / image_filename
 
+# Compatibilitas nama file gambar Neck yang pernah diunggah ke GitHub.
+# GitHub/Linux membedakan huruf besar-kecil dan nama file harus cocok persis.
+if normalize(section) == "neck":
+    neck_aliases = {
+        1: ["gambar_neck_1.png", "Gambar_Neck_1.png", "Gambar_neck_1.png"],
+        2: ["gambar_neck_2.png", "Gambar_Neck_2.png", "Gmbar_Neck_2.png", "Gmbar_neck_2.png"],
+        3: ["gambar_neck_3.png", "Gambar_Neck_3.png", "Gmbar_Neck_3.png", "Gmbar_neck_3.png"],
+    }
+    for candidate in neck_aliases.get(quiz_stage, []):
+        if (BASE / candidate).is_file():
+            image_filename = candidate
+            image_path = BASE / candidate
+            break
+
 # Stage 2: identity before showing the image/questions.
 if not st.session_state.quiz_started:
     st.markdown('<div class="quiz-title">KUIS ANATOMI JUNIOR</div>', unsafe_allow_html=True)
