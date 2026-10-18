@@ -23,7 +23,7 @@ SECTIONS = [
 # Nama file gambar untuk tiap bagian. Untuk Skull, gunakan gambar yang sudah ada.
 IMAGE_FILES = {
     "Skull": "gambar_tengkorak.png",
-    "Neck": "gambar_neck.png",
+    "Neck": "gambar_neck_1.png",
     "Vertebra": "gambar_vertebra.png",
     "Shoulder": "gambar_shoulder.png",
     "Humerus": "gambar_humerus.png",
@@ -299,20 +299,30 @@ if st.session_state.selected_section is None:
 section = st.session_state.selected_section
 all_section_questions = [q for q in questions if normalize(q["bagian"]) == normalize(section)]
 quiz_stage = st.session_state.quiz_stage
-if normalize(section) == "skull":
-    section_questions = [q for q in all_section_questions if str(q.get("gambar", "1")).strip() == str(quiz_stage)]
-    image_filename = {
-        1: "gambar_tengkorak.png",
-        2: "gambar_tengkorak_2.png",
-        3: "gambar_tengkorak_3.png",
-        4: "gambar_tengkorak_4.png",
-        5: "gambar_tengkorak_5.png",
-        6: "gambar_tengkorak_6.png",
-        7: "gambar_tengkorak_7.png",
-    }.get(quiz_stage, "gambar_tengkorak.png")
+# Setiap bagian dapat memiliki beberapa sesi gambar.
+if normalize(section) in {"skull", "neck"}:
+    section_questions = [
+        q for q in all_section_questions
+        if str(q.get("gambar", "1")).strip() == str(quiz_stage)
+    ]
+    if normalize(section) == "skull":
+        image_filename = {
+            1: "gambar_tengkorak.png",
+            2: "gambar_tengkorak_2.png",
+            3: "gambar_tengkorak_3.png",
+            4: "gambar_tengkorak_4.png",
+            5: "gambar_tengkorak_5.png",
+            6: "gambar_tengkorak_6.png",
+            7: "gambar_tengkorak_7.png",
+        }.get(quiz_stage, "gambar_tengkorak.png")
+        max_stages = 7
+    else:
+        image_filename = f"gambar_neck_{quiz_stage}.png"
+        max_stages = 3
 else:
     section_questions = all_section_questions
     image_filename = IMAGE_FILES.get(section, "")
+    max_stages = 1
 image_path = BASE / image_filename
 
 # Stage 2: identity before showing the image/questions.
@@ -344,10 +354,14 @@ if not st.session_state.quiz_started:
     st.stop()
 
 # Stage 3: image and questions for the selected section.
-if normalize(section) == "skull" and quiz_stage > 1 and not section_questions:
-    st.warning(f"Belum ada soal untuk gambar {quiz_stage}. Tambahkan soal ke Google Sheets dengan bagian=Skull dan gambar={quiz_stage}.")
-    if st.button("Kembali ke Gambar 1"):
-        st.session_state.quiz_stage = 1
+if normalize(section) in {"skull", "neck"} and not section_questions:
+    st.warning(
+        f"Soal untuk {section}, gambar {quiz_stage} belum tersedia atau belum memiliki jawaban benar. "
+        f"Pastikan Google Sheets memiliki soal aktif dengan bagian={section}, gambar={quiz_stage}, "
+        "dan kolom jawaban_benar terisi."
+    )
+    if quiz_stage > 1 and st.button("← Kembali ke Gambar Sebelumnya"):
+        st.session_state.quiz_stage = quiz_stage - 1
         st.session_state.quiz_submitted = False
         st.rerun()
     st.stop()
@@ -356,7 +370,7 @@ if not st.session_state.quiz_submitted:
     left, right = st.columns([1.0, 1.15], gap="large")
     with left:
         with st.container(key=f"image_panel_stage_{quiz_stage}"):
-            if section == "Skull":
+            if normalize(section) in {"skull", "neck"}:
                 if image_path.exists():
                     st.image(Image.open(image_path), width=550)
                 else:
@@ -375,7 +389,7 @@ if not st.session_state.quiz_submitted:
             else:
                 st.info(
                     f"Gambar untuk bagian {section} belum tersedia. Unggah file "
-                    f"`{IMAGE_FILES.get(section, 'gambar_bagian.png')}` ke repositori GitHub."
+                    f"`{image_filename}` ke repositori GitHub."
                 )
     with right:
         with st.form("quiz_answers"):
@@ -390,7 +404,7 @@ if not st.session_state.quiz_submitted:
             confirm = st.checkbox("Saya sudah memeriksa jawaban saya.")
             send = st.form_submit_button("Kirim jawaban dan lihat nilai", type="primary", use_container_width=True)
         # Navigasi antargambar tersedia meskipun peserta belum mengirim jawaban.
-        if normalize(section) == "skull":
+        if normalize(section) in {"skull", "neck"}:
             nav_back, nav_next = st.columns(2)
             with nav_back:
                 if quiz_stage > 1:
@@ -403,7 +417,7 @@ if not st.session_state.quiz_submitted:
                         st.session_state.quiz_submitted = False
                         st.rerun()
             with nav_next:
-                if quiz_stage < 7:
+                if quiz_stage < max_stages:
                     next_stage_form = quiz_stage + 1
                     if st.button(
                         f"Lanjut ke Gambar {next_stage_form} →",
@@ -417,7 +431,7 @@ if not st.session_state.quiz_submitted:
                         ):
                             st.warning(
                                 f"Soal gambar {next_stage_form} belum tersedia. "
-                                f"Tambahkan soal di Google Sheets dengan bagian=Skull dan gambar={next_stage_form}."
+                                f"Tambahkan soal di Google Sheets dengan bagian={section} dan gambar={next_stage_form}."
                             )
                         else:
                             st.session_state.quiz_stage = next_stage_form
@@ -486,7 +500,7 @@ for idx, item in enumerate(details, start=1):
     st.write(f"Jawaban yang Benar: {item['jawaban_benar']}")
 st.divider()
 # Navigasi sesi: peserta dapat kembali ke gambar sebelumnya untuk mengerjakan ulang.
-if normalize(section) == "skull" and quiz_stage > 1:
+if normalize(section) in {"skull", "neck"} and quiz_stage > 1:
     back_col, retry_col, next_col = st.columns(3)
 else:
     retry_col, next_col = st.columns(2)
@@ -508,11 +522,11 @@ with retry_col:
         st.session_state.quiz_submitted = False
         st.rerun()
 with next_col:
-    if normalize(section) == "skull" and quiz_stage < 7:
+    if normalize(section) in {"skull", "neck"} and quiz_stage < max_stages:
         next_stage = quiz_stage + 1
         if st.button(f"Lanjut ke Gambar {next_stage}", type="primary", use_container_width=True):
             if not any(str(q.get("gambar", "1")).strip() == str(next_stage) for q in all_section_questions):
-                st.error(f"Soal gambar {next_stage} belum tersedia. Tambahkan soal di Google Sheets dengan bagian=Skull dan gambar={next_stage}.")
+                st.error(f"Soal gambar {next_stage} belum tersedia. Tambahkan soal di Google Sheets dengan bagian={section} dan gambar={next_stage}.")
             else:
                 # Setiap gambar/tahap baru menggunakan sesi input baru.
                 st.session_state.attempt_id = uuid.uuid4().hex
