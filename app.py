@@ -25,18 +25,18 @@ IMAGE_FILES = {
     "Skull": "gambar_tengkorak.png",
     "Neck": "gambar_neck_1.png",
     "Vertebra": "gambar_vertebra.png",
-    "Shoulder": "gambar_shoulder.png",
-    "Humerus": "gambar_humerus.png",
-    "Elbow": "gambar_elbow.png",
+    "Shoulder": "Shoulder1.png",
+    "Humerus": "Humerus1.png",
+    "Elbow": "Elbow1.png",
     "Forearm": "gambar_forearm.png",
-    "Hand": "gambar_hand.png",
-    "Chest": "gambar_chest.png",
-    "Pelvis": "gambar_pelvis.png",
+    "Hand": "Hand1.png",
+    "Chest": "Thorax1.png",
+    "Pelvis": "Hip1.png",
     "Femur": "gambar_femur.png",
-    "Genu": "gambar_genu.png",
+    "Genu": "Genu1.png",
     "Cruris": "gambar_cruris.png",
-    "Ankle": "gambar_ankle.png",
-    "Foot": "gambar_foot.png",
+    "Ankle": "Ankle1.png",
+    "Foot": "Foot1.png",
 }
 
 st.set_page_config(page_title="KUIS ANATOMI JUNIOR", page_icon="🩻", layout="wide")
@@ -359,6 +359,25 @@ if normalize(section) == "neck":
             image_filename = candidate
             image_path = BASE / candidate
             break
+
+# Resolve filenames that already exist in the GitHub repository.
+# File names are case-sensitive on Streamlit Cloud (Linux).
+if normalize(section) not in {"skull", "neck"}:
+    actual_image_names = {
+        "shoulder": {i: f"Shoulder{i}.png" for i in range(1, 10)},
+        "humerus": {1: "Humerus1.png"},
+        "elbow": {1: "Elbow1.png", 2: "Elbow2.png"},
+        "hand": {1: "Hand1.png", 2: "Hand2.png"},
+        "chest": {1: "Thorax1.png", 2: "Thorax2.png"},
+        "pelvis": {1: "Hip1.png", 2: "Hip2.png", 3: "Hip3.png"},
+        "genu": {1: "Genu1.png", 2: "Genu2.png", 3: "Genu3.png"},
+        "ankle": {i: f"Ankle{i}.png" for i in range(1, 5)},
+        "foot": {i: f"Foot{i}.png" for i in range(1, 5)},
+    }
+    stage_file = actual_image_names.get(normalize(section), {}).get(quiz_stage)
+    if stage_file and (BASE / stage_file).is_file():
+        image_filename = stage_file
+        image_path = BASE / stage_file
 
 # Stage 2: identity before showing the image/questions.
 if not st.session_state.quiz_started:
