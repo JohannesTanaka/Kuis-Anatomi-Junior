@@ -458,7 +458,7 @@ if not st.session_state.quiz_submitted:
             use_container_width=True,
         )
 
-        # Navigasi berurutan: sebelumnya, berikutnya, dan menu utama.
+        # Navigasi soal: dropdown untuk lompat langsung, serta tombol sebelumnya/selanjutnya.
         available_stages = sorted({
             int(str(q.get("gambar", "1")).strip())
             for q in all_section_questions
@@ -468,22 +468,38 @@ if not st.session_state.quiz_submitted:
             st.divider()
             st.markdown("**Navigasi soal**")
             current_index = available_stages.index(quiz_stage) if quiz_stage in available_stages else 0
-            nav_cols = st.columns([1, 1, 1])
-            with nav_cols[0]:
+            nav_select_col, nav_prev_col, nav_next_col, nav_menu_col = st.columns([1.35, 1, 1, 1.1])
+            select_key = f"select_stage_{section_key}_{quiz_stage}"
+            with nav_select_col:
+                def jump_to_selected_stage():
+                    selected = st.session_state.get(select_key)
+                    if selected is not None:
+                        st.session_state.quiz_stage = int(selected)
+                        st.session_state.quiz_submitted = False
+                        st.session_state.attempt_id = uuid.uuid4().hex
+                st.selectbox(
+                    "Pilih gambar/soal",
+                    options=available_stages,
+                    index=current_index,
+                    format_func=lambda n: f"Gambar/Soal {n}",
+                    key=select_key,
+                    on_change=jump_to_selected_stage,
+                )
+            with nav_prev_col:
                 if current_index > 0:
                     previous_stage = available_stages[current_index - 1]
                     if st.button(f"← Sebelumnya ({previous_stage})", key=f"previous_stage_{section_key}_{quiz_stage}", use_container_width=True):
                         st.session_state.quiz_stage = previous_stage
                         st.session_state.quiz_submitted = False
                         st.rerun()
-            with nav_cols[1]:
+            with nav_next_col:
                 if current_index < len(available_stages) - 1:
                     next_stage = available_stages[current_index + 1]
                     if st.button(f"Selanjutnya ({next_stage}) →", key=f"next_stage_{section_key}_{quiz_stage}", use_container_width=True):
                         st.session_state.quiz_stage = next_stage
                         st.session_state.quiz_submitted = False
                         st.rerun()
-            with nav_cols[2]:
+            with nav_menu_col:
                 if st.button("Menu utama", key=f"menu_from_quiz_{section_key}_{quiz_stage}", use_container_width=True):
                     reset_quiz()
                     st.rerun()
@@ -549,15 +565,31 @@ for idx, item in enumerate(details, start=1):
     st.write(f"Jawaban Peserta: {item['jawaban_peserta'].strip() or 'Tidak dijawab'}")
     st.write(f"Jawaban yang Benar: {item['jawaban_benar']}")
 st.divider()
-# Navigasi halaman hasil: sebelumnya, selanjutnya, ulangi, atau kembali ke menu utama.
+# Navigasi halaman hasil: dropdown langsung, sebelumnya/selanjutnya, ulangi, menu utama.
 available_stages = sorted({
     int(str(q.get("gambar", "1")).strip())
     for q in all_section_questions
     if str(q.get("gambar", "1")).strip().isdigit()
 })
 current_index = available_stages.index(quiz_stage) if quiz_stage in available_stages else 0
-result_nav = st.columns([1, 1, 1, 1])
-with result_nav[0]:
+result_select_col, result_prev_col, result_next_col, result_retry_col, result_menu_col = st.columns([1.35, 1, 1, 1, 1.1])
+result_select_key = f"result_select_stage_{section_key}_{quiz_stage}"
+with result_select_col:
+    def jump_to_result_stage():
+        selected = st.session_state.get(result_select_key)
+        if selected is not None:
+            st.session_state.quiz_stage = int(selected)
+            st.session_state.attempt_id = uuid.uuid4().hex
+            st.session_state.quiz_submitted = str(selected) in st.session_state.stage_results
+    st.selectbox(
+        "Pilih gambar/soal",
+        options=available_stages or [quiz_stage],
+        index=(available_stages.index(quiz_stage) if quiz_stage in available_stages else 0),
+        format_func=lambda n: f"Gambar/Soal {n}",
+        key=result_select_key,
+        on_change=jump_to_result_stage,
+    )
+with result_prev_col:
     if current_index > 0:
         previous_stage = available_stages[current_index - 1]
         if st.button(f"← Sebelumnya ({previous_stage})", key=f"result_previous_{section_key}_{quiz_stage}", use_container_width=True):
@@ -565,7 +597,7 @@ with result_nav[0]:
             st.session_state.attempt_id = uuid.uuid4().hex
             st.session_state.quiz_submitted = str(previous_stage) in st.session_state.stage_results
             st.rerun()
-with result_nav[1]:
+with result_next_col:
     if current_index < len(available_stages) - 1:
         next_stage = available_stages[current_index + 1]
         if st.button(f"Selanjutnya ({next_stage}) →", key=f"result_next_{section_key}_{quiz_stage}", use_container_width=True):
@@ -573,12 +605,12 @@ with result_nav[1]:
             st.session_state.attempt_id = uuid.uuid4().hex
             st.session_state.quiz_submitted = str(next_stage) in st.session_state.stage_results
             st.rerun()
-with result_nav[2]:
+with result_retry_col:
     if st.button("Ulangi Lagi", key=f"retry_stage_{section_key}_{quiz_stage}", use_container_width=True):
         st.session_state.attempt_id = uuid.uuid4().hex
         st.session_state.quiz_submitted = False
         st.rerun()
-with result_nav[3]:
+with result_menu_col:
     if st.button("Menu utama", key=f"menu_result_{section_key}_{quiz_stage}", type="primary", use_container_width=True):
         reset_quiz()
         st.rerun()
