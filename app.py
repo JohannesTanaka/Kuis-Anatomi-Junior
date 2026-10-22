@@ -320,65 +320,56 @@ if st.session_state.selected_section is None:
 section = st.session_state.selected_section
 all_section_questions = [q for q in questions if normalize(q["bagian"]) == normalize(section)]
 quiz_stage = st.session_state.quiz_stage
-# Setiap bagian dapat memiliki beberapa sesi gambar.
-if normalize(section) in {"skull", "neck"}:
-    section_questions = [
-        q for q in all_section_questions
-        if str(q.get("gambar", "1")).strip() == str(quiz_stage)
-    ]
-    if normalize(section) == "skull":
-        image_filename = {
-            1: "gambar_tengkorak.png",
-            2: "gambar_tengkorak_2.png",
-            3: "gambar_tengkorak_3.png",
-            4: "gambar_tengkorak_4.png",
-            5: "gambar_tengkorak_5.png",
-            6: "gambar_tengkorak_6.png",
-            7: "gambar_tengkorak_7.png",
-        }.get(quiz_stage, "gambar_tengkorak.png")
-        max_stages = 7
-    else:
-        image_filename = f"gambar_neck_{quiz_stage}.png"
-        max_stages = 3
-else:
-    section_questions = all_section_questions
-    image_filename = IMAGE_FILES.get(section, "")
-    max_stages = 1
-image_path = BASE / image_filename
 
-# Compatibilitas nama file gambar Neck yang pernah diunggah ke GitHub.
-# GitHub/Linux membedakan huruf besar-kecil dan nama file harus cocok persis.
-if normalize(section) == "neck":
+# Pemetaan gambar berdasarkan nama file yang benar-benar digunakan di repositori.
+# Kolom Google Sheets "gambar" menentukan tahap/gambar yang ditampilkan.
+SECTION_IMAGE_FILES = {
+    "skull": {i: f"gambar_tengkorak{'_' + str(i) if i > 1 else ''}.png" for i in range(1, 8)},
+    "neck": {
+        1: "Gambar_Neck_1.png",
+        2: "Gmbar_Neck_2.png",
+        3: "Gmbar_Neck_3.png",
+    },
+    "shoulder": {i: f"Shoulder{i}.png" for i in range(1, 10)},
+    "humerus": {1: "Humerus1.png"},
+    "elbow": {1: "Elbow1.png", 2: "Elbow2.png"},
+    "hand": {1: "Hand1.png", 2: "Hand2.png"},
+    "chest": {1: "Thorax1.png", 2: "Thorax2.png"},
+    "pelvis": {1: "Hip1.png", 2: "Hip2.png", 3: "Hip3.png"},
+    "genu": {1: "Genu1.png", 2: "Genu2.png", 3: "Genu3.png"},
+    "ankle": {i: f"Ankle{i}.png" for i in range(1, 5)},
+    "foot": {i: f"Foot{i}.png" for i in range(1, 5)},
+}
+
+section_key = normalize(section)
+image_map = SECTION_IMAGE_FILES.get(section_key, {})
+# Gunakan gambar yang benar-benar memiliki soal aktif pada bagian terpilih.
+stages_with_questions = sorted({
+    int(str(q.get("gambar", "1")).strip())
+    for q in all_section_questions
+    if str(q.get("gambar", "1")).strip().isdigit()
+})
+if not stages_with_questions:
+    stages_with_questions = [1]
+max_stages = max(max(image_map.keys(), default=1), max(stages_with_questions, default=1))
+section_questions = [
+    q for q in all_section_questions
+    if str(q.get("gambar", "1")).strip() == str(quiz_stage)
+]
+
+image_filename = image_map.get(quiz_stage, IMAGE_FILES.get(section, ""))
+# Kompatibilitas variasi ejaan file Neck yang mungkin sudah ada di GitHub.
+if section_key == "neck":
     neck_aliases = {
-        1: ["gambar_neck_1.png", "Gambar_Neck_1.png", "Gambar_neck_1.png"],
-        2: ["gambar_neck_2.png", "Gambar_Neck_2.png", "Gmbar_Neck_2.png", "Gmbar_neck_2.png"],
-        3: ["gambar_neck_3.png", "Gambar_Neck_3.png", "Gmbar_Neck_3.png", "Gmbar_neck_3.png"],
+        1: ["Gambar_Neck_1.png", "Gambar_neck_1.png", "gambar_neck_1.png"],
+        2: ["Gmbar_Neck_2.png", "Gmbar_neck_2.png", "Gambar_Neck_2.png", "gambar_neck_2.png"],
+        3: ["Gmbar_Neck_3.png", "Gmbar_neck_3.png", "Gambar_Neck_3.png", "gambar_neck_3.png"],
     }
     for candidate in neck_aliases.get(quiz_stage, []):
         if (BASE / candidate).is_file():
             image_filename = candidate
-            image_path = BASE / candidate
             break
-
-# Resolve filenames that already exist in the GitHub repository.
-# File names are case-sensitive on Streamlit Cloud (Linux).
-if normalize(section) not in {"skull", "neck"}:
-    actual_image_names = {
-        "shoulder": {i: f"Shoulder{i}.png" for i in range(1, 10)},
-        "humerus": {1: "Humerus1.png"},
-        "elbow": {1: "Elbow1.png", 2: "Elbow2.png"},
-        "hand": {1: "Hand1.png", 2: "Hand2.png"},
-        "chest": {1: "Thorax1.png", 2: "Thorax2.png"},
-        "pelvis": {1: "Hip1.png", 2: "Hip2.png", 3: "Hip3.png"},
-        "genu": {1: "Genu1.png", 2: "Genu2.png", 3: "Genu3.png"},
-        "ankle": {i: f"Ankle{i}.png" for i in range(1, 5)},
-        "foot": {i: f"Foot{i}.png" for i in range(1, 5)},
-    }
-    stage_file = actual_image_names.get(normalize(section), {}).get(quiz_stage)
-    if stage_file and (BASE / stage_file).is_file():
-        image_filename = stage_file
-        image_path = BASE / stage_file
-
+image_path = BASE / image_filename if image_filename else BASE / "__missing_image__"
 # Stage 2: identity before showing the image/questions.
 if not st.session_state.quiz_started:
     st.markdown('<div class="quiz-title">KUIS ANATOMI JUNIOR</div>', unsafe_allow_html=True)
@@ -408,43 +399,47 @@ if not st.session_state.quiz_started:
     st.stop()
 
 # Stage 3: image and questions for the selected section.
-if normalize(section) in {"skull", "neck"} and not section_questions:
+if not section_questions:
     st.warning(
-        f"Soal untuk {section}, gambar {quiz_stage} belum tersedia atau belum memiliki jawaban benar. "
-        f"Pastikan Google Sheets memiliki soal aktif dengan bagian={section}, gambar={quiz_stage}, "
+        f"Soal untuk {section}, gambar {quiz_stage} belum tersedia atau belum aktif. "
+        f"Tambahkan soal aktif di Google Sheets dengan bagian={section}, gambar={quiz_stage}, "
         "dan kolom jawaban_benar terisi."
     )
-    if quiz_stage > 1 and st.button("← Kembali ke Gambar Sebelumnya"):
-        st.session_state.quiz_stage = quiz_stage - 1
-        st.session_state.quiz_submitted = False
-        st.rerun()
+    nav_cols = st.columns(2)
+    with nav_cols[0]:
+        if quiz_stage > 1 and st.button("← Gambar Sebelumnya", use_container_width=True):
+            st.session_state.quiz_stage = quiz_stage - 1
+            st.session_state.quiz_submitted = False
+            st.rerun()
+    with nav_cols[1]:
+        if quiz_stage < max_stages and st.button("Lewati ke Gambar Berikutnya →", use_container_width=True):
+            st.session_state.quiz_stage = quiz_stage + 1
+            st.session_state.quiz_submitted = False
+            st.rerun()
     st.stop()
 
 if not st.session_state.quiz_submitted:
     left, right = st.columns([1.0, 1.15], gap="large")
     with left:
         with st.container(key=f"image_panel_stage_{quiz_stage}"):
-            if normalize(section) in {"skull", "neck"}:
-                if image_path.exists():
-                    st.image(Image.open(image_path), width=550)
-                else:
-                    st.warning(f"Gambar tahap {quiz_stage} belum tersedia: {image_filename}")
-                st.markdown(
-                    """
-                    <div style="font-size:0.875rem; line-height:1.25;">
-                        Referensi: Weir &amp; Abrahams’ Imaging Atlas of Human Anatomy, Fifth Edition.<br>
-                        Jawaban harus sama persis dengan istilah yang digunakan dalam buku referensi.
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-            elif image_path.exists():
-                st.image(Image.open(image_path), caption=f"Gambar referensi • {section}", use_container_width=True)
+            if image_path.is_file():
+                st.image(Image.open(image_path), caption=f"Gambar referensi • {section} • Gambar {quiz_stage}", use_container_width=True)
             else:
                 st.info(
-                    f"Gambar untuk bagian {section} belum tersedia. Unggah file "
-                    f"`{image_filename}` ke repositori GitHub."
+                    f"Gambar untuk bagian {section}, tahap {quiz_stage} belum ditemukan. "
+                    f"Pastikan file `{image_filename}` sudah diunggah ke repositori GitHub "
+                    "dengan nama dan huruf besar-kecil yang sama persis."
                 )
+            # Catatan referensi berlaku untuk semua bagian dan semua gambar.
+            st.markdown(
+                """
+                <div style="font-size:0.875rem; line-height:1.4; margin-top:0.75rem;">
+                    <b>Referensi:</b> Weir &amp; Abrahams’ Imaging Atlas of Human Anatomy, Fifth Edition.<br>
+                    <b>Jawaban:</b> Gunakan istilah anatomi sesuai buku referensi.
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
     with right:
         with st.form("quiz_answers"):
             for idx, item in enumerate(section_questions, start=1):
@@ -458,7 +453,7 @@ if not st.session_state.quiz_submitted:
             confirm = st.checkbox("Saya sudah memeriksa jawaban saya.")
             send = st.form_submit_button("Kirim jawaban dan lihat nilai", type="primary", use_container_width=True)
         # Navigasi antargambar tersedia meskipun peserta belum mengirim jawaban.
-        if normalize(section) in {"skull", "neck"}:
+        if max_stages > 1:
             nav_back, nav_next = st.columns(2)
             with nav_back:
                 if quiz_stage > 1:
@@ -554,7 +549,7 @@ for idx, item in enumerate(details, start=1):
     st.write(f"Jawaban yang Benar: {item['jawaban_benar']}")
 st.divider()
 # Navigasi sesi: peserta dapat kembali ke gambar sebelumnya untuk mengerjakan ulang.
-if normalize(section) in {"skull", "neck"} and quiz_stage > 1:
+if max_stages > 1 and quiz_stage > 1:
     back_col, retry_col, next_col = st.columns(3)
 else:
     retry_col, next_col = st.columns(2)
@@ -576,7 +571,7 @@ with retry_col:
         st.session_state.quiz_submitted = False
         st.rerun()
 with next_col:
-    if normalize(section) in {"skull", "neck"} and quiz_stage < max_stages:
+    if max_stages > 1 and quiz_stage < max_stages:
         next_stage = quiz_stage + 1
         if st.button(f"Lanjut ke Gambar {next_stage}", type="primary", use_container_width=True):
             if not any(str(q.get("gambar", "1")).strip() == str(next_stage) for q in all_section_questions):
