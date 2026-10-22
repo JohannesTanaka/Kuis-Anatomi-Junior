@@ -423,7 +423,7 @@ if not st.session_state.quiz_submitted:
     with left:
         with st.container(key=f"image_panel_stage_{quiz_stage}"):
             if image_path.is_file():
-                st.image(Image.open(image_path), caption=f"Gambar referensi • {section} • Gambar {quiz_stage}", use_container_width=True)
+                st.image(Image.open(image_path), use_container_width=True)
             else:
                 st.info(
                     f"Gambar untuk bagian {section}, tahap {quiz_stage} belum ditemukan. "
