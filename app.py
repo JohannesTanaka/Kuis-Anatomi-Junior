@@ -20,38 +20,23 @@ SECTIONS = [
     "Femur", "Genu", "Cruris", "Ankle", "Foot",
 ]
 
-# Nama file gambar yang benar-benar ada di repositori GitHub.
-# Resolusi dilakukan berdasarkan nama bagian dan nomor gambar (tahap).
-IMAGE_CANDIDATES = {
-    "skull": {
-        1: ["gambar_tengkorak.png"],
-        2: ["gambar_tengkorak_2.png"],
-        3: ["gambar_tengkorak_3.png"],
-        4: ["gambar_tengkorak_4.png"],
-        5: ["gambar_tengkorak_5.png"],
-        6: ["gambar_tengkorak_6.png"],
-        7: ["gambar_tengkorak_7.png"],
-    },
-    "neck": {
-        1: ["gambar_neck_1.png", "Gambar_Neck_1.png", "Gambar_neck_1.png"],
-        2: ["gambar_neck_2.png", "Gambar_Neck_2.png", "Gmbar_Neck_2.png", "Gmbar_neck_2.png"],
-        3: ["gambar_neck_3.png", "Gambar_Neck_3.png", "Gmbar_Neck_3.png", "Gmbar_neck_3.png"],
-    },
-    "shoulder": {i: [f"Shoulder{i}.png", f"shoulder{i}.png", f"gambar_shoulder_{i}.png"] for i in range(1, 10)},
-    "humerus": {1: ["Humerus1.png", "humerus1.png", "gambar_humerus.png"]},
-    "elbow": {i: [f"Elbow{i}.png", f"elbow{i}.png", f"gambar_elbow_{i}.png"] for i in range(1, 3)},
-    "hand": {i: [f"Hand{i}.png", f"hand{i}.png", f"gambar_hand_{i}.png"] for i in range(1, 3)},
-    "chest": {i: [f"Thorax{i}.png", f"thorax{i}.png", f"Chest{i}.png", f"chest{i}.png", f"gambar_chest_{i}.png"] for i in range(1, 3)},
-    "pelvis": {i: [f"Hip{i}.png", f"hip{i}.png", f"Pelvis{i}.png", f"pelvis{i}.png", f"gambar_pelvis_{i}.png"] for i in range(1, 4)},
-    "genu": {i: [f"Genu{i}.png", f"genu{i}.png", f"gambar_genu_{i}.png"] for i in range(1, 4)},
-    "ankle": {i: [f"Ankle{i}.png", f"ankle{i}.png", f"gambar_ankle_{i}.png"] for i in range(1, 5)},
-    "foot": {i: [f"Foot{i}.png", f"foot{i}.png", f"gambar_foot_{i}.png"] for i in range(1, 5)},
-    # Alias untuk file tambahan yang terlihat di repositori.
-    "abdomen": {1: ["Abdomen1.png", "abdomen1.png"]},
-    "vertebra": {1: ["Vertebra1.png", "vertebra1.png", "gambar_vertebra.png"]},
-    "forearm": {1: ["Forearm1.png", "forearm1.png", "gambar_forearm.png"]},
-    "femur": {1: ["Femur1.png", "femur1.png", "gambar_femur.png"]},
-    "cruris": {1: ["Cruris1.png", "cruris1.png", "gambar_cruris.png"]},
+# Nama file gambar untuk tiap bagian. Untuk Skull, gunakan gambar yang sudah ada.
+IMAGE_FILES = {
+    "Skull": "gambar_tengkorak.png",
+    "Neck": "gambar_neck_1.png",
+    "Vertebra": "gambar_vertebra.png",
+    "Shoulder": "gambar_shoulder.png",
+    "Humerus": "gambar_humerus.png",
+    "Elbow": "gambar_elbow.png",
+    "Forearm": "gambar_forearm.png",
+    "Hand": "gambar_hand.png",
+    "Chest": "gambar_chest.png",
+    "Pelvis": "gambar_pelvis.png",
+    "Femur": "gambar_femur.png",
+    "Genu": "gambar_genu.png",
+    "Cruris": "gambar_cruris.png",
+    "Ankle": "gambar_ankle.png",
+    "Foot": "gambar_foot.png",
 }
 
 st.set_page_config(page_title="KUIS ANATOMI JUNIOR", page_icon="🩻", layout="wide")
@@ -94,3 +79,18 @@ st.markdown("""
     height: calc(100vh - 4.5rem) !important;
     max-height: calc(100vh - 4.5rem) !important;
     padding-top: 0.25rem !important;
+    margin-top: 0 !important;
+    overflow-y: auto !important;
+    scroll-padding-top: 0 !important;
+    overflow-x: hidden !important;
+    scrollbar-width: thin !important;
+    scrollbar-color: #b0b0b0 transparent !important;
+    z-index: 10 !important;
+}
+[class*="st-key-image_panel_stage_"]::-webkit-scrollbar {
+    width: 4px !important;
+}
+[class*="st-key-image_panel_stage_"]::-webkit-scrollbar-track {
+    background: transparent !important;
+}
+[class*="st-key-image_panel_stage_"]::-webkit-scrollbar-thumb {
