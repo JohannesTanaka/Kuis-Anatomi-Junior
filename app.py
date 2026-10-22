@@ -64,7 +64,8 @@ st.markdown("""
     border-radius: 12px;
 }
 .stTextInput input { background-color: #F3F4F6 !important; }
-.block-container { padding-top: 2rem; }
+/* Beri jarak tambahan dari toolbar agar pertanyaan pertama tidak tertutup/terpotong. */
+.block-container { padding-top: 4.5rem !important; }
 .quiz-title { font-size: 2rem; font-weight: 800; letter-spacing: .02em; margin-bottom: .2rem; }
 .quiz-subtitle { color: var(--text-color); opacity: .72; margin-bottom: 1.2rem; }
 .section-card { border: 1px solid rgba(128,128,128,.28); border-radius: 12px; padding: 1rem; }
