@@ -441,51 +441,52 @@ if not st.session_state.quiz_submitted:
                 unsafe_allow_html=True
             )
     with right:
-        with st.form("quiz_answers"):
-            for idx, item in enumerate(section_questions, start=1):
-                prompt = item["pertanyaan"] or f"Identifikasi struktur anatomi {idx}."
-                answer_key = f"answer_{st.session_state.attempt_id}_{item['id']}"
-                st.text_input(
-                    prompt,
-                    key=answer_key,
-                    placeholder="Ketik jawaban...",
+        # Input di luar st.form agar jawaban tersimpan saat berpindah gambar.
+        for idx, item in enumerate(section_questions, start=1):
+            prompt = item["pertanyaan"] or f"Identifikasi struktur anatomi {idx}."
+            answer_key = f"answer_{st.session_state.attempt_id}_{item['id']}"
+            st.text_input(prompt, key=answer_key, placeholder="Ketik jawaban...")
+
+        confirm = st.checkbox(
+            "Saya sudah memeriksa jawaban saya.",
+            key=f"confirm_{st.session_state.attempt_id}_{quiz_stage}",
+        )
+        send = st.button(
+            "Kirim jawaban dan lihat nilai",
+            key=f"submit_answers_{st.session_state.attempt_id}_{quiz_stage}",
+            type="primary",
+            use_container_width=True,
+        )
+
+        # Navigasi langsung ke gambar/tahap mana pun yang memiliki soal aktif.
+        available_stages = sorted({
+            int(str(q.get("gambar", "1")).strip())
+            for q in all_section_questions
+            if str(q.get("gambar", "1")).strip().isdigit()
+        })
+        if available_stages:
+            st.divider()
+            st.markdown("**Navigasi soal**")
+            jump_col, jump_btn_col, menu_col = st.columns([1.35, 0.8, 1.0])
+            with jump_col:
+                target_stage = st.selectbox(
+                    "Pilih gambar/soal",
+                    options=available_stages,
+                    index=available_stages.index(quiz_stage) if quiz_stage in available_stages else 0,
+                    format_func=lambda n: f"Gambar/Soal {n}",
+                    key=f"jump_stage_select_{section_key}",
                 )
-            confirm = st.checkbox("Saya sudah memeriksa jawaban saya.")
-            send = st.form_submit_button("Kirim jawaban dan lihat nilai", type="primary", use_container_width=True)
-        # Navigasi antargambar tersedia meskipun peserta belum mengirim jawaban.
-        if max_stages > 1:
-            nav_back, nav_next = st.columns(2)
-            with nav_back:
-                if quiz_stage > 1:
-                    if st.button(
-                        f"← Kembali ke Gambar {quiz_stage - 1}",
-                        key=f"back_from_form_{quiz_stage}",
-                        use_container_width=True,
-                    ):
-                        st.session_state.quiz_stage = quiz_stage - 1
-                        st.session_state.quiz_submitted = False
-                        st.rerun()
-            with nav_next:
-                if quiz_stage < max_stages:
-                    next_stage_form = quiz_stage + 1
-                    if st.button(
-                        f"Lanjut ke Gambar {next_stage_form} →",
-                        key=f"next_from_form_{quiz_stage}",
-                        type="secondary",
-                        use_container_width=True,
-                    ):
-                        if not any(
-                            str(q.get("gambar", "1")).strip() == str(next_stage_form)
-                            for q in all_section_questions
-                        ):
-                            st.warning(
-                                f"Soal gambar {next_stage_form} belum tersedia. "
-                                f"Tambahkan soal di Google Sheets dengan bagian={section} dan gambar={next_stage_form}."
-                            )
-                        else:
-                            st.session_state.quiz_stage = next_stage_form
-                            st.session_state.quiz_submitted = False
-                            st.rerun()
+            with jump_btn_col:
+                st.write("")
+                if st.button("Lompat", key=f"jump_stage_btn_{section_key}_{quiz_stage}", use_container_width=True):
+                    st.session_state.quiz_stage = int(target_stage)
+                    st.session_state.quiz_submitted = False
+                    st.rerun()
+            with menu_col:
+                st.write("")
+                if st.button("Menu utama", key=f"menu_from_quiz_{section_key}_{quiz_stage}", use_container_width=True):
+                    reset_quiz()
+                    st.rerun()
 
     if send:
         if not confirm:
@@ -548,41 +549,36 @@ for idx, item in enumerate(details, start=1):
     st.write(f"Jawaban Peserta: {item['jawaban_peserta'].strip() or 'Tidak dijawab'}")
     st.write(f"Jawaban yang Benar: {item['jawaban_benar']}")
 st.divider()
-# Navigasi sesi: peserta dapat kembali ke gambar sebelumnya untuk mengerjakan ulang.
-if max_stages > 1 and quiz_stage > 1:
-    back_col, retry_col, next_col = st.columns(3)
-else:
-    retry_col, next_col = st.columns(2)
-    back_col = None
-
-if back_col is not None:
-    with back_col:
-        previous_stage = quiz_stage - 1
-        if st.button(f"← Kembali ke Gambar {previous_stage}", use_container_width=True):
-            st.session_state.quiz_stage = previous_stage
-            st.session_state.attempt_id = uuid.uuid4().hex
-            st.session_state.quiz_submitted = False
-            st.rerun()
-
-with retry_col:
-    if st.button("Ulangi Lagi", use_container_width=True):
-        # Mulai percobaan baru dengan kunci widget yang benar-benar baru.
+# Navigasi halaman hasil: lompat langsung ke tahap mana pun, ulangi, atau kembali ke menu utama.
+available_stages = sorted({
+    int(str(q.get("gambar", "1")).strip())
+    for q in all_section_questions
+    if str(q.get("gambar", "1")).strip().isdigit()
+})
+result_nav = st.columns([1.4, 0.8, 0.9, 1.1])
+with result_nav[0]:
+    target_result_stage = st.selectbox(
+        "Pilih gambar/soal",
+        options=available_stages or [quiz_stage],
+        index=(available_stages.index(quiz_stage) if quiz_stage in available_stages else 0),
+        format_func=lambda n: f"Gambar/Soal {n}",
+        key=f"jump_result_select_{section_key}",
+    )
+with result_nav[1]:
+    st.write("")
+    if st.button("Lompat", key=f"jump_result_btn_{section_key}_{quiz_stage}", use_container_width=True):
+        st.session_state.quiz_stage = int(target_result_stage)
+        st.session_state.attempt_id = uuid.uuid4().hex
+        st.session_state.quiz_submitted = str(target_result_stage) in st.session_state.stage_results
+        st.rerun()
+with result_nav[2]:
+    st.write("")
+    if st.button("Ulangi Lagi", key=f"retry_stage_{section_key}_{quiz_stage}", use_container_width=True):
         st.session_state.attempt_id = uuid.uuid4().hex
         st.session_state.quiz_submitted = False
         st.rerun()
-with next_col:
-    if max_stages > 1 and quiz_stage < max_stages:
-        next_stage = quiz_stage + 1
-        if st.button(f"Lanjut ke Gambar {next_stage}", type="primary", use_container_width=True):
-            if not any(str(q.get("gambar", "1")).strip() == str(next_stage) for q in all_section_questions):
-                st.error(f"Soal gambar {next_stage} belum tersedia. Tambahkan soal di Google Sheets dengan bagian={section} dan gambar={next_stage}.")
-            else:
-                # Setiap gambar/tahap baru menggunakan sesi input baru.
-                st.session_state.attempt_id = uuid.uuid4().hex
-                st.session_state.quiz_stage = next_stage
-                st.session_state.quiz_submitted = False
-                st.rerun()
-    else:
-        if st.button("Selesai / Kembali ke menu", type="primary", use_container_width=True):
-            reset_quiz()
-            st.rerun()
+with result_nav[3]:
+    st.write("")
+    if st.button("Menu utama", key=f"menu_result_{section_key}_{quiz_stage}", type="primary", use_container_width=True):
+        reset_quiz()
+        st.rerun()
