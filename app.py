@@ -16,7 +16,7 @@ RESULTS_PATH = BASE / "hasil_kuis_lokal.csv"
 
 SECTIONS = [
     "Skull", "Neck", "Vertebra", "Shoulder", "Humerus",
-    "Elbow", "Forearm", "Hand", "Chest", "Pelvis",
+    "Elbow", "Forearm", "Hand", "Thorax", "Pelvis",
     "Femur", "Genu", "Cruris", "Ankle", "Foot",
 ]
 
@@ -31,6 +31,7 @@ IMAGE_FILES = {
     "Forearm": "gambar_forearm.png",
     "Hand": "Hand1.png",
     "Chest": "Thorax1.png",
+    "Thorax": "Thorax1.png",
     "Pelvis": "Hip1.png",
     "Femur": "gambar_femur.png",
     "Genu": "Genu1.png",
@@ -319,7 +320,19 @@ if st.session_state.selected_section is None:
     st.stop()
 
 section = st.session_state.selected_section
-all_section_questions = [q for q in questions if normalize(q["bagian"]) == normalize(section)]
+
+def section_matches(question_section, selected_section):
+    # "Chest" dan "Thorax" adalah nama yang setara untuk bagian yang sama.
+    aliases = {"chest", "thorax"}
+    q_section = normalize(question_section)
+    selected = normalize(selected_section)
+    if q_section in aliases and selected in aliases:
+        return True
+    return q_section == selected
+
+all_section_questions = [
+    q for q in questions if section_matches(q["bagian"], section)
+]
 quiz_stage = st.session_state.quiz_stage
 
 # Pemetaan gambar berdasarkan nama file yang benar-benar digunakan di repositori.
@@ -336,6 +349,7 @@ SECTION_IMAGE_FILES = {
     "elbow": {1: "Elbow1.png", 2: "Elbow2.png"},
     "hand": {1: "Hand1.png", 2: "Hand2.png"},
     "chest": {1: "Thorax1.png", 2: "Thorax2.png"},
+    "thorax": {1: "Thorax1.png", 2: "Thorax2.png"},
     "pelvis": {1: "Hip1.png", 2: "Hip2.png", 3: "Hip3.png"},
     "genu": {1: "Genu1.png", 2: "Genu2.png", 3: "Genu3.png"},
     "ankle": {i: f"Ankle{i}.png" for i in range(1, 5)},
