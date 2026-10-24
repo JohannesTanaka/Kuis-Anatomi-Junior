@@ -465,13 +465,13 @@ if not st.session_state.quiz_submitted:
                 audio_b64 = base64.b64encode(music_path.read_bytes()).decode("ascii")
                 st.components.v1.html(
                     f'''
-                    <audio autoplay loop controls preload="auto"
-                           style="width:100%;height:38px;">
+                    <audio autoplay loop preload="auto"
+                           style="display:none;width:0;height:0;opacity:0;pointer-events:none;"
+                           aria-hidden="true">
                       <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
-                      Browser Anda tidak mendukung pemutar audio.
                     </audio>
                     ''',
-                    height=48,
+                    height=1,
                 )
             except Exception:
                 st.info("Pemutar musik tidak dapat dimuat. Silakan muat ulang aplikasi.")
