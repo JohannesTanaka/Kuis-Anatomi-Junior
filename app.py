@@ -459,7 +459,7 @@ if not st.session_state.quiz_submitted:
     with right:
         # Musik diputar otomatis dan berulang selama halaman pengerjaan soal terbuka.
         # Browser dapat membatasi autoplay dengan suara sampai peserta berinteraksi.
-        music_path = BASE / "belajarmusik.mp3"
+        music_path = BASE / "BelajarMusik.mp3"
         if music_path.is_file():
             try:
                 audio_b64 = base64.b64encode(music_path.read_bytes()).decode("ascii")
@@ -477,7 +477,7 @@ if not st.session_state.quiz_submitted:
                 st.info("Pemutar musik tidak dapat dimuat. Silakan muat ulang aplikasi.")
         else:
             st.warning(
-                "File belajarmusik.mp3 belum ditemukan. Unggah file tersebut ke folder "
+                "File BelajarMusik.mp3 belum ditemukan. Unggah file tersebut ke folder "
                 "yang sama dengan app.py di repositori GitHub."
             )
 
