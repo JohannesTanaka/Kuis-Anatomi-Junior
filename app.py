@@ -308,6 +308,42 @@ if load_error:
     st.error(load_error)
     st.stop()
 
+# Musik global: tampil tersembunyi di menu utama dan seluruh tahap kuis.
+# Posisi dipertahankan di sessionStorage agar rerun saat berpindah tahap melanjutkan lagu
+# dari posisi terakhir, bukan selalu kembali ke awal.
+music_path = BASE / "BelajarMusik.mp3"
+if music_path.is_file():
+    try:
+        audio_b64 = base64.b64encode(music_path.read_bytes()).decode("ascii")
+        st.components.v1.html(
+            f"""
+            <audio id="quiz-background-music" autoplay loop preload="auto"
+                   style="display:none;width:0;height:0;opacity:0;pointer-events:none;"
+                   aria-hidden="true">
+              <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
+            </audio>
+            <script>
+              const audio = document.getElementById("quiz-background-music");
+              const storageKey = "kuis_anatomi_music_time";
+              try {{
+                const saved = Number(sessionStorage.getItem(storageKey) || "0");
+                if (Number.isFinite(saved) && saved > 0) audio.currentTime = saved;
+                audio.addEventListener("timeupdate", () => {{
+                  try {{ sessionStorage.setItem(storageKey, String(audio.currentTime)); }} catch (e) {{}}
+                }});
+                audio.addEventListener("ended", () => {{
+                  try {{ sessionStorage.setItem(storageKey, "0"); }} catch (e) {{}}
+                }});
+                const playPromise = audio.play();
+                if (playPromise && playPromise.catch) playPromise.catch(() => {{}});
+              }} catch (e) {{}}
+            </script>
+            """,
+            height=1,
+        )
+    except Exception:
+        pass
+
 # Stage 1: choose anatomy section.
 if st.session_state.selected_section is None:
     st.markdown('<div class="quiz-title">KUIS ANATOMI JUNIOR</div>', unsafe_allow_html=True)
@@ -457,30 +493,6 @@ if not st.session_state.quiz_submitted:
                 unsafe_allow_html=True
             )
     with right:
-        # Musik diputar otomatis dan berulang selama halaman pengerjaan soal terbuka.
-        # Browser dapat membatasi autoplay dengan suara sampai peserta berinteraksi.
-        music_path = BASE / "BelajarMusik.mp3"
-        if music_path.is_file():
-            try:
-                audio_b64 = base64.b64encode(music_path.read_bytes()).decode("ascii")
-                st.components.v1.html(
-                    f'''
-                    <audio autoplay loop preload="auto"
-                           style="display:none;width:0;height:0;opacity:0;pointer-events:none;"
-                           aria-hidden="true">
-                      <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
-                    </audio>
-                    ''',
-                    height=1,
-                )
-            except Exception:
-                st.info("Pemutar musik tidak dapat dimuat. Silakan muat ulang aplikasi.")
-        else:
-            st.warning(
-                "File BelajarMusik.mp3 belum ditemukan. Unggah file tersebut ke folder "
-                "yang sama dengan app.py di repositori GitHub."
-            )
-
         # Input di luar st.form agar jawaban tersimpan saat berpindah gambar.
         for idx, item in enumerate(section_questions, start=1):
             prompt = item["pertanyaan"] or f"Identifikasi struktur anatomi {idx}."
