@@ -1,3 +1,4 @@
+import base64
 import csv
 import json
 import re
@@ -456,6 +457,32 @@ if not st.session_state.quiz_submitted:
                 unsafe_allow_html=True
             )
     with right:
+        # Melodi instrumental lembut untuk menemani peserta saat mengisi jawaban.
+        music_on = st.checkbox(
+            "Putar melodi saat mengisi jawaban",
+            value=False,
+            key=f"music_on_{section_key}_{quiz_stage}",
+            help="Jika audio tidak mulai otomatis, tekan tombol Play pada pemutar musik.",
+        )
+        music_path = BASE / "melodi_kuis.wav"
+        if music_on and music_path.is_file():
+            try:
+                audio_b64 = base64.b64encode(music_path.read_bytes()).decode("ascii")
+                st.components.v1.html(
+                    f'''
+                    <div style="font-family:Arial,sans-serif;font-size:13px;color:#555;">
+                      <audio autoplay loop controls style="width:100%;height:38px;">
+                        <source src="data:audio/wav;base64,{audio_b64}" type="audio/wav">
+                      </audio>
+                    </div>
+                    ''',
+                    height=48,
+                )
+            except Exception:
+                st.info("Pemutar melodi tidak dapat dimuat. Silakan coba muat ulang aplikasi.")
+        elif music_on:
+            st.info("File melodi_kuis.wav belum ditemukan. Unggah file melodi ini ke repositori yang sama dengan app.py.")
+
         # Input di luar st.form agar jawaban tersimpan saat berpindah gambar.
         for idx, item in enumerate(section_questions, start=1):
             prompt = item["pertanyaan"] or f"Identifikasi struktur anatomi {idx}."
